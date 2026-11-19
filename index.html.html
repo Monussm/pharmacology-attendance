@@ -1,0 +1,3042 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Department of Pharmacology - Attendance Management System</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- SheetJS with styling support (xlsx-js-style) for report-formatted Excel (.xlsx) export -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            color: #0f172a;
+        }
+        /* Custom scrollbar for clean look */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        .roll-btn {
+            transition: all 0.12s ease-in-out;
+            user-select: none;
+            min-height: 44px;
+            touch-action: manipulation;
+        }
+        .roll-btn:active:not(:disabled) {
+            transform: scale(0.95);
+        }
+        button, input, select {
+            touch-action: manipulation;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col overflow-x-hidden">
+
+    <!-- Header -->
+    <header class="bg-slate-900 text-white shadow-md sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3.5 sm:py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div class="flex items-center gap-3 min-w-0">
+                <div class="bg-emerald-500/20 border border-emerald-400/30 p-2.5 rounded-xl text-emerald-400 shrink-0">
+                    <i data-lucide="clipboard-check" class="w-6 h-6"></i>
+                </div>
+                <div class="min-w-0">
+                    <h1 class="text-base sm:text-xl font-bold tracking-tight text-white truncate">Department of Pharmacology</h1>
+                    <p class="text-xs sm:text-sm text-slate-300 truncate">Attendance Management System (Roll 1 – 250)</p>
+                </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+                <!-- Global Academic Session Selector & Manager -->
+                <div class="flex items-center gap-1.5 bg-slate-800 border border-slate-600 rounded-xl px-2.5 py-1">
+                    <i data-lucide="layers" class="w-3.5 h-3.5 text-amber-400 shrink-0"></i>
+                    <span class="text-[11px] font-medium text-slate-300 hidden md:inline">Session:</span>
+                    <select id="global-session-select" onchange="handleGlobalSessionChange()" aria-label="Select Academic Session" class="bg-transparent text-white text-xs font-semibold outline-none cursor-pointer pr-1 py-1">
+                        <!-- Populated via JS -->
+                    </select>
+                    <button type="button" onclick="openSessionManagerModal()" title="Manage Academic Sessions / Batches" class="p-1 text-slate-300 hover:text-white hover:bg-slate-700 rounded-lg transition">
+                        <i data-lucide="settings-2" class="w-3.5 h-3.5"></i>
+                    </button>
+                </div>
+
+                <div id="sync-status-pill" class="flex items-center gap-2 text-xs text-slate-300 bg-slate-800/80 px-3 py-2 rounded-xl border border-slate-700">
+                    <span id="sync-status-dot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                    <span id="sync-status-text">Cloud Syncing...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <nav class="bg-slate-800 border-t border-slate-700/80">
+            <div class="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 flex overflow-x-auto no-scrollbar">
+                <button onclick="switchTab('mark')" id="tab-btn-mark" class="tab-btn min-h-[44px] flex items-center gap-2 px-3.5 sm:px-4 py-3 text-xs sm:text-sm font-medium border-b-2 border-emerald-400 text-emerald-400 whitespace-nowrap transition-colors">
+                    <i data-lucide="check-square" class="w-4 h-4 shrink-0"></i>
+                    <span>Mark Attendance</span>
+                </button>
+                <button onclick="switchTab('records')" id="tab-btn-records" class="tab-btn min-h-[44px] flex items-center gap-2 px-3.5 sm:px-4 py-3 text-xs sm:text-sm font-medium border-b-2 border-transparent text-slate-300 hover:text-white whitespace-nowrap transition-colors">
+                    <i data-lucide="search" class="w-4 h-4 shrink-0"></i>
+                    <span>Attendance Records (Search & Edit)</span>
+                </button>
+                <button onclick="switchTab('summary')" id="tab-btn-summary" class="tab-btn min-h-[44px] flex items-center gap-2 px-3.5 sm:px-4 py-3 text-xs sm:text-sm font-medium border-b-2 border-transparent text-slate-300 hover:text-white whitespace-nowrap transition-colors">
+                    <i data-lucide="bar-chart-3" class="w-4 h-4 shrink-0"></i>
+                    <span>Professor & Student Summary</span>
+                </button>
+                <button onclick="switchTab('not-joined')" id="tab-btn-not-joined" class="tab-btn min-h-[44px] flex items-center gap-2 px-3.5 sm:px-4 py-3 text-xs sm:text-sm font-medium border-b-2 border-transparent text-slate-300 hover:text-white whitespace-nowrap transition-colors">
+                    <i data-lucide="user-x" class="w-4 h-4 shrink-0"></i>
+                    <span>Not Joined Students (Roll 1–250)</span>
+                    <span id="not-joined-badge" class="ml-1 bg-slate-700 text-slate-200 text-xs px-2 py-0.5 rounded-full">0</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+
+    <!-- Main Content -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
+
+        <!-- ========================================================= -->
+        <!-- TAB 1: MARK ATTENDANCE                                    -->
+        <!-- ========================================================= -->
+        <section id="tab-mark" class="tab-section space-y-6">
+            <!-- Edit Mode Banner (Hidden by default) -->
+            <div id="edit-mode-banner" class="hidden bg-amber-50 border border-amber-300 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+                <div class="flex items-center gap-3">
+                    <div class="bg-amber-100 text-amber-700 p-2 rounded-lg">
+                        <i data-lucide="edit-3" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-semibold text-amber-900">Editing Existing Class Session</h3>
+                        <p id="edit-mode-subtitle" class="text-xs text-amber-700">Modify the details or roll numbers below and click Update Attendance.</p>
+                    </div>
+                </div>
+                <button onclick="cancelEditSession()" class="px-3 py-1.5 bg-white border border-amber-300 text-amber-800 hover:bg-amber-100 rounded-lg text-xs font-medium self-start sm:self-auto transition">
+                    Cancel Edit
+                </button>
+            </div>
+
+            <!-- Session Details Card -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-5">
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+                    <h2 class="text-base font-semibold text-slate-800 flex items-center gap-2">
+                        <i data-lucide="calendar-days" class="w-4 h-4 text-emerald-600"></i>
+                        <span>Class Session Details</span>
+                    </h2>
+                    <span id="mark-session-pill" class="px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-200 text-xs font-semibold">Session: 2026-2027</span>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Academic Session *</label>
+                        <select id="session-batch-select" onchange="syncSessionFromMarkForm()" class="min-h-[44px] w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
+                            <!-- Populated via JS -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Class Date *</label>
+                        <input type="date" id="session-date" class="min-h-[44px] w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Professor Name *</label>
+                        <input type="text" id="session-professor" list="professor-datalist" placeholder="e.g., Dr. R. K. Sharma" class="min-h-[44px] w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
+                        <datalist id="professor-datalist"></datalist>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Topic / Lecture Note (Optional)</label>
+                        <input type="text" id="session-topic" placeholder="e.g., Autonomic Nervous System" class="min-h-[44px] w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Controls & Live Counters -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-5 space-y-4">
+                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                    <!-- Live Counters -->
+                    <div class="flex flex-wrap items-center gap-2.5">
+                        <div class="px-3.5 py-2 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                            <span class="text-xs font-medium text-emerald-800">Present:</span>
+                            <span id="count-present" class="text-sm font-bold text-emerald-700">0</span>
+                        </div>
+                        <div class="px-3.5 py-2 rounded-xl bg-rose-50 border border-rose-200 flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                            <span class="text-xs font-medium text-rose-800">Absent:</span>
+                            <span id="count-absent" class="text-sm font-bold text-rose-700">250</span>
+                        </div>
+                        <div class="px-3.5 py-2 rounded-xl bg-slate-100 border border-slate-200 flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-slate-400"></span>
+                            <span class="text-xs font-medium text-slate-700">Not Joined:</span>
+                            <span id="count-not-joined" class="text-sm font-bold text-slate-700">0</span>
+                        </div>
+                    </div>
+
+                    <!-- Bulk Buttons -->
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button onclick="markAllActivePresent()" class="min-h-[44px] px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-sm transition flex items-center gap-1.5">
+                            <i data-lucide="check-check" class="w-4 h-4"></i>
+                            <span>Mark All Active Present</span>
+                        </button>
+                        <button onclick="clearAllPresent()" class="min-h-[44px] px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl border border-slate-300 transition flex items-center gap-1.5">
+                            <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                            <span>Clear All</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Search & Quick Comma-Separated Entry -->
+                <div class="space-y-4">
+                    <div class="max-w-sm">
+                        <label class="block text-xs font-medium text-slate-600 mb-1">Filter / Find Roll Number in Grid</label>
+                        <div class="relative">
+                            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                            <input type="number" id="grid-search-roll" min="1" max="250" oninput="renderRollGrid()" placeholder="Find roll (e.g., 45)..." class="min-h-[44px] w-full pl-9 pr-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                        </div>
+                    </div>
+
+                    <!-- Dedicated Side-by-Side Present & Absent Roll Number Entry Boxes -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        <!-- Box A: Present Roll Numbers -->
+                        <div class="p-4 rounded-2xl bg-emerald-50/60 border border-emerald-200 space-y-2.5">
+                            <div class="flex items-center justify-between gap-2">
+                                <label for="quick-present-input" class="text-xs font-bold text-emerald-900 uppercase tracking-wider flex items-center gap-1.5">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                                    <span>Enter Present Roll Numbers</span>
+                                </label>
+                                <span id="badge-present-feedback" class="hidden text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300"></span>
+                            </div>
+                            <input type="text" id="quick-present-input" placeholder="e.g., 1, 2, 5, 10-15" onkeydown="if(event.key==='Enter') applyPresentRolls(false)" class="min-h-[44px] w-full px-3.5 py-2 bg-white border border-emerald-300 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500 outline-none">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <button type="button" onclick="applyPresentRolls(false)" class="min-h-[44px] px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-2xs transition flex items-center gap-1.5">
+                                    <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>
+                                    <span>Apply Present Rolls</span>
+                                </button>
+                                <button type="button" onclick="applyPresentRolls(true)" class="min-h-[44px] px-3.5 py-2 bg-white hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-semibold rounded-xl transition">
+                                    + Add to Present
+                                </button>
+                            </div>
+                            <p class="text-[11px] text-emerald-800/80 leading-relaxed">
+                                <strong>Apply Present Rolls:</strong> Marks entered rolls <strong>Present</strong> &amp; all remaining active rolls <strong>Absent</strong>.
+                            </p>
+                        </div>
+
+                        <!-- Box B: Absent Roll Numbers -->
+                        <div class="p-4 rounded-2xl bg-rose-50/70 border border-rose-200 space-y-2.5">
+                            <div class="flex items-center justify-between gap-2">
+                                <label for="quick-absent-input" class="text-xs font-bold text-rose-900 uppercase tracking-wider flex items-center gap-1.5">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                                    <span>Enter Absent Roll Numbers</span>
+                                </label>
+                                <span id="badge-absent-feedback" class="hidden text-[11px] font-semibold px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-300"></span>
+                            </div>
+                            <input type="text" id="quick-absent-input" placeholder="e.g., 3, 7, 18, 22-25" onkeydown="if(event.key==='Enter') applyAbsentRolls(false)" class="min-h-[44px] w-full px-3.5 py-2 bg-white border border-rose-300 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-rose-500 outline-none">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <button type="button" onclick="applyAbsentRolls(false)" class="min-h-[44px] px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded-xl shadow-2xs transition flex items-center gap-1.5">
+                                    <i data-lucide="x-circle" class="w-3.5 h-3.5"></i>
+                                    <span>Apply Absent Rolls</span>
+                                </button>
+                                <button type="button" onclick="applyAbsentRolls(true)" class="min-h-[44px] px-3.5 py-2 bg-white hover:bg-rose-100 text-rose-800 border border-rose-300 text-xs font-semibold rounded-xl transition">
+                                    + Add to Absent
+                                </button>
+                            </div>
+                            <p class="text-[11px] text-rose-800/80 leading-relaxed">
+                                <strong>Apply Absent Rolls:</strong> Marks entered rolls <strong>Absent</strong> &amp; all remaining active rolls <strong>Present</strong>.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Legend -->
+                <div class="flex flex-wrap items-center justify-between gap-2 pt-1 text-xs text-slate-500">
+                    <p>Click any active roll number below to toggle between <strong class="text-rose-600">Absent</strong> and <strong class="text-emerald-600">Present</strong>.</p>
+                    <div class="flex items-center gap-4">
+                        <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-emerald-500 inline-block"></span> Present</span>
+                        <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-rose-50 border border-rose-300 inline-block"></span> Absent</span>
+                        <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-slate-200 border border-slate-300 inline-block"></span> Not Joined</span>
+                    </div>
+                </div>
+
+                <!-- Roll Number Grid (1 to 250) -->
+                <div id="roll-grid" class="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 xl:grid-cols-15 gap-1.5 sm:gap-2 pt-2">
+                    <!-- Buttons 1..250 injected via JS -->
+                </div>
+
+                <!-- Save Action Footer -->
+                <div class="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-end gap-3">
+                    <button onclick="saveAttendanceSession()" id="save-session-btn" class="min-h-[44px] w-full sm:w-auto px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-xl shadow-md hover:shadow-lg transition flex items-center justify-center gap-2">
+                        <i data-lucide="save" class="w-4 h-4"></i>
+                        <span id="save-session-btn-text">Save Attendance</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================================= -->
+        <!-- TAB 2: ATTENDANCE RECORDS (SEARCH & EDIT)                 -->
+        <!-- ========================================================= -->
+        <section id="tab-records" class="tab-section hidden space-y-6">
+            <!-- Search & Filter Bar -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                    <h2 class="text-base font-semibold text-slate-800 flex items-center gap-2">
+                        <i data-lucide="filter" class="w-4 h-4 text-emerald-600"></i>
+                        <span>Search & Filter Attendance Records</span>
+                    </h2>
+                    <button onclick="exportOfficialReportExcel()" class="min-h-[44px] px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-sm transition flex items-center gap-2 self-start sm:self-auto">
+                        <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                        <span>Export Official Excel Report</span>
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">Academic Session</label>
+                        <select id="filter-session" onchange="renderRecordsTable()" class="min-h-[44px] w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500">
+                            <option value="ALL">All Sessions</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">Exact Date</label>
+                        <input type="date" id="filter-date-exact" onchange="handleExactDateFilter()" class="min-h-[44px] w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">From Date</label>
+                        <input type="date" id="filter-date-from" onchange="renderRecordsTable()" class="min-h-[44px] w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">To Date</label>
+                        <input type="date" id="filter-date-to" onchange="renderRecordsTable()" class="min-h-[44px] w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">Professor Name</label>
+                        <select id="filter-professor" onchange="renderRecordsTable()" class="min-h-[44px] w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500">
+                            <option value="ALL">All Professors</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">Check Roll No. (1–250)</label>
+                        <div class="flex gap-2">
+                            <input type="number" id="filter-roll-status" min="1" max="250" oninput="renderRecordsTable()" placeholder="e.g. 24" class="min-h-[44px] w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500">
+                            <button onclick="resetRecordFilters()" title="Reset Filters" class="min-h-[44px] px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl border border-slate-300 transition whitespace-nowrap">
+                                Reset
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Records Table -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                                <th class="py-3.5 px-4">Session</th>
+                                <th class="py-3.5 px-4">Date</th>
+                                <th class="py-3.5 px-4">Professor Name</th>
+                                <th class="py-3.5 px-4">Topic</th>
+                                <th class="py-3.5 px-4 text-center">Present</th>
+                                <th class="py-3.5 px-4 text-center">Absent</th>
+                                <th class="py-3.5 px-4 text-center">Not Joined</th>
+                                <th id="th-roll-status" class="py-3.5 px-4 text-center hidden">Roll Status</th>
+                                <th class="py-3.5 px-4 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="records-table-body" class="divide-y divide-slate-100 text-sm">
+                            <!-- Rows injected via JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="records-empty-state" class="hidden py-12 text-center px-4">
+                    <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-100 text-slate-400 mb-3">
+                        <i data-lucide="folder-open" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="text-sm font-semibold text-slate-800">No Attendance Records Found</h3>
+                    <p class="text-xs text-slate-500 mt-1">Mark attendance in the first tab or adjust your search filters.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================================= -->
+        <!-- TAB 3: PROFESSOR & STUDENT SUMMARY                        -->
+        <!-- ========================================================= -->
+        <section id="tab-summary" class="tab-section hidden space-y-6">
+            <!-- Custom Attendance & Class Highlight Threshold Checker Panel -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                    <div>
+                        <h2 class="text-base font-semibold text-slate-800 flex items-center gap-2">
+                            <i data-lucide="highlighter" class="w-4 h-4 text-amber-500"></i>
+                            <span>Custom Class & Attendance Threshold Highlighter</span>
+                        </h2>
+                        <p class="text-xs text-slate-500 mt-0.5">Set custom rules to highlight matching students and professors in the tables below and inside the exported Excel Report.</p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5">
+                            <label class="text-xs font-semibold text-slate-600">Session:</label>
+                            <select id="summary-session-filter" onchange="renderSummaryTables()" class="bg-transparent text-xs font-bold text-slate-900 outline-none cursor-pointer">
+                                <!-- Populated via JS -->
+                            </select>
+                        </div>
+                        <button onclick="exportOfficialReportExcel()" class="min-h-[42px] px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-sm transition flex items-center gap-2">
+                            <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                            <span>Export Formatted Report (.xlsx)</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <!-- Student Highlight Rule -->
+                    <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
+                        <div class="flex items-center justify-between gap-2">
+                            <label class="inline-flex items-center gap-2 text-xs font-bold text-slate-800 uppercase tracking-wider cursor-pointer">
+                                <input type="checkbox" id="hl-student-enabled" checked onchange="renderSummaryTables()" class="w-4 h-4 rounded accent-emerald-600">
+                                <span>Highlight Students Rule</span>
+                            </label>
+                            <span id="hl-student-match-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-200">0 Matched</span>
+                        </div>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            <div>
+                                <label class="block text-[11px] font-medium text-slate-500 mb-1">Metric</label>
+                                <select id="hl-student-metric" onchange="renderSummaryTables()" class="min-h-[38px] w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-medium outline-none focus:ring-2 focus:ring-emerald-500">
+                                    <option value="pct">Attendance %</option>
+                                    <option value="attended">Classes Attended</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-medium text-slate-500 mb-1">Condition</label>
+                                <select id="hl-student-op" onchange="renderSummaryTables()" class="min-h-[38px] w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-medium outline-none focus:ring-2 focus:ring-emerald-500">
+                                    <option value="lt">Below (&lt;)</option>
+                                    <option value="lte">At or Below (&le;)</option>
+                                    <option value="gte">At or Above (&ge;)</option>
+                                    <option value="gt">Above (&gt;)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-medium text-slate-500 mb-1">Target Value</label>
+                                <input type="number" id="hl-student-val" value="75" min="0" max="1000" step="any" oninput="renderSummaryTables()" class="min-h-[38px] w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-900 outline-none focus:ring-2 focus:ring-emerald-500">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-medium text-slate-500 mb-1">Highlight Color</label>
+                                <select id="hl-student-color" onchange="renderSummaryTables()" class="min-h-[38px] w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-medium outline-none focus:ring-2 focus:ring-emerald-500">
+                                    <option value="red">Red (Shortage)</option>
+                                    <option value="amber">Amber (Warning)</option>
+                                    <option value="green">Green (Eligible)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Professor Highlight Rule -->
+                    <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
+                        <div class="flex items-center justify-between gap-2">
+                            <label class="inline-flex items-center gap-2 text-xs font-bold text-slate-800 uppercase tracking-wider cursor-pointer">
+                                <input type="checkbox" id="hl-prof-enabled" checked onchange="renderSummaryTables()" class="w-4 h-4 rounded accent-emerald-600">
+                                <span>Highlight Professors Rule</span>
+                            </label>
+                            <span id="hl-prof-match-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">0 Matched</span>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2">
+                            <div>
+                                <label class="block text-[11px] font-medium text-slate-500 mb-1">Condition (Classes)</label>
+                                <select id="hl-prof-op" onchange="renderSummaryTables()" class="min-h-[38px] w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-medium outline-none focus:ring-2 focus:ring-emerald-500">
+                                    <option value="gte">At or Above (&ge;)</option>
+                                    <option value="gt">Above (&gt;)</option>
+                                    <option value="lte">At or Below (&le;)</option>
+                                    <option value="lt">Below (&lt;)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-medium text-slate-500 mb-1">Classes Count</label>
+                                <input type="number" id="hl-prof-val" value="10" min="0" max="1000" oninput="renderSummaryTables()" class="min-h-[38px] w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-900 outline-none focus:ring-2 focus:ring-emerald-500">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-medium text-slate-500 mb-1">Highlight Color</label>
+                                <select id="hl-prof-color" onchange="renderSummaryTables()" class="min-h-[38px] w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-medium outline-none focus:ring-2 focus:ring-emerald-500">
+                                    <option value="green">Green (Target Met)</option>
+                                    <option value="amber">Amber (Warning)</option>
+                                    <option value="red">Red (Low Classes)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section A: Professor Class Summary -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <h2 class="text-base font-semibold text-slate-800 flex items-center gap-2">
+                            <i data-lucide="users" class="w-4 h-4 text-emerald-600"></i>
+                            <span>Section A: Professor Class Summary</span>
+                        </h2>
+                        <p class="text-xs text-slate-500 mt-0.5">Total classes conducted by each professor in the selected session.</p>
+                    </div>
+                    <button onclick="exportOfficialReportExcel()" class="min-h-[44px] px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold rounded-xl shadow-sm transition flex items-center gap-2 self-start sm:self-auto">
+                        <i data-lucide="download" class="w-4 h-4"></i>
+                        <span>Export Report Workbook</span>
+                    </button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                                <th class="py-3 px-4">#</th>
+                                <th class="py-3 px-4">Professor Name</th>
+                                <th class="py-3 px-4 text-center">Total Classes Taken</th>
+                                <th class="py-3 px-4 text-center">Avg. Attendance</th>
+                                <th class="py-3 px-4 text-center">Threshold Status</th>
+                                <th class="py-3 px-4 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="professor-summary-body" class="divide-y divide-slate-100 text-sm">
+                            <!-- Rows injected via JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="professor-empty-state" class="hidden py-8 text-center text-xs text-slate-500">
+                    No classes have been recorded for the selected session yet.
+                </div>
+            </div>
+
+            <!-- Section B: Student Attendance Breakdown (Roll 1 to 250) -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-5 border-b border-slate-100 space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div>
+                            <h2 class="text-base font-semibold text-slate-800 flex items-center gap-2">
+                                <i data-lucide="graduation-cap" class="w-4 h-4 text-emerald-600"></i>
+                                <span>Section B: Student Attendance Breakdown (Roll 1–250)</span>
+                            </h2>
+                            <p class="text-xs text-slate-500 mt-0.5">View overall or professor-specific attendance counts and highlight status for every roll number.</p>
+                        </div>
+                        <button onclick="exportOfficialReportExcel()" class="min-h-[44px] px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-sm transition flex items-center gap-2 self-start sm:self-auto">
+                            <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                            <span>Export Official Excel Report</span>
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">Filter by Professor</label>
+                            <select id="summary-professor-filter" onchange="renderSummaryTables()" class="min-h-[44px] w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500">
+                                <option value="ALL">All Professors (Combined)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">Search Roll Number (1–250)</label>
+                            <input type="number" id="summary-roll-search" min="1" max="250" oninput="renderSummaryTables()" placeholder="Enter Roll No..." class="min-h-[44px] w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">Filter by Joining Status</label>
+                            <select id="summary-status-filter" onchange="renderSummaryTables()" class="min-h-[44px] w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500">
+                                <option value="ALL">All Students (1–250)</option>
+                                <option value="JOINED">Active / Joined Only</option>
+                                <option value="LATE_JOINED">Late Joined Only</option>
+                                <option value="NOT_JOINED">Not Joined Only</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">Filter by Highlight Match</label>
+                            <select id="summary-highlight-filter" onchange="renderSummaryTables()" class="min-h-[44px] w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500">
+                                <option value="ALL">Show All Rows</option>
+                                <option value="HIGHLIGHTED_ONLY">Highlighted Matches Only</option>
+                                <option value="NON_HIGHLIGHTED">Non-Highlighted Only</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto max-h-[540px]">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="sticky top-0 z-10">
+                            <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                                <th class="py-3 px-4">Roll No.</th>
+                                <th class="py-3 px-4">Joining Status</th>
+                                <th class="py-3 px-4 text-center">Total Classes Held</th>
+                                <th class="py-3 px-4 text-center">Classes Attended</th>
+                                <th class="py-3 px-4 text-center">Classes Absent</th>
+                                <th class="py-3 px-4 text-center">Attendance %</th>
+                                <th class="py-3 px-4 text-right">Threshold Remark</th>
+                            </tr>
+                        </thead>
+                        <tbody id="student-summary-body" class="divide-y divide-slate-100 text-sm">
+                            <!-- 250 Rows injected via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================================= -->
+        <!-- TAB 4: NOT JOINED STUDENTS (ROLL 1–250)                   -->
+        <!-- ========================================================= -->
+        <section id="tab-not-joined" class="tab-section hidden space-y-6">
+            <!-- Individual Entry Card -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-1">
+                    <h2 class="text-base font-semibold text-slate-800 flex items-center gap-2">
+                        <i data-lucide="user-plus" class="w-4 h-4 text-emerald-600"></i>
+                        <span>Add Individual Not Joined Student</span>
+                    </h2>
+                    <span id="nj-session-pill" class="px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-200 text-xs font-semibold">Session: 2026-2027</span>
+                </div>
+                <p class="text-xs text-slate-500 mb-4">Enter an individual roll number (1 to 250) that has not joined classes yet for the active session. They will be excluded from regular Absent counts until you mark them as joined.</p>
+
+                <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+                    <div class="sm:col-span-3">
+                        <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">Roll Number (1–250) *</label>
+                        <input type="number" id="nj-roll-input" min="1" max="250" placeholder="e.g., 45" onkeydown="if(event.key==='Enter') addNotJoinedStudent()" class="min-h-[44px] w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                    <div class="sm:col-span-6">
+                        <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">Remark / Note (Optional)</label>
+                        <input type="text" id="nj-remark-input" placeholder="e.g., Admission pending / Transfer student" onkeydown="if(event.key==='Enter') addNotJoinedStudent()" class="min-h-[44px] w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                    <div class="sm:col-span-3">
+                        <button type="button" onclick="addNotJoinedStudent()" class="min-h-[44px] w-full px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-sm transition flex items-center justify-center gap-1.5">
+                            <i data-lucide="user-plus" class="w-4 h-4"></i>
+                            <span>Mark Not Joined</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Currently Not Joined List -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-base font-semibold text-slate-800">Currently Not Joined Students</h3>
+                        <p class="text-xs text-slate-500">Click "Mark as Joined" when a student starts attending classes to record their exact joining date.</p>
+                    </div>
+                    <span id="nj-total-count" class="px-3 py-1 bg-slate-100 text-slate-700 text-xs font-semibold rounded-full">0 Students</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                                <th class="py-3 px-4">Roll No.</th>
+                                <th class="py-3 px-4">Status</th>
+                                <th class="py-3 px-4">Remark / Note</th>
+                                <th class="py-3 px-4 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="not-joined-table-body" class="divide-y divide-slate-100 text-sm">
+                            <!-- Rows injected via JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="nj-empty-state" class="py-10 text-center text-xs text-slate-500">
+                    All roll numbers (1–250) are currently marked as active/joined.
+                </div>
+            </div>
+
+            <!-- Late Joined Students Log -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-base font-semibold text-slate-800 flex items-center gap-2">
+                            <i data-lucide="calendar-check" class="w-4 h-4 text-emerald-600"></i>
+                            <span>Late Joined Students Log</span>
+                        </h3>
+                        <p class="text-xs text-slate-500">Students who were previously Not Joined and later joined classes with a recorded Joining Date.</p>
+                    </div>
+                    <span id="lj-total-count" class="px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-full">0 Students</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                                <th class="py-3 px-4">Roll No.</th>
+                                <th class="py-3 px-4">Joining Date</th>
+                                <th class="py-3 px-4">Remark / Note</th>
+                                <th class="py-3 px-4 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="late-joined-table-body" class="divide-y divide-slate-100 text-sm">
+                            <!-- Rows injected via JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="lj-empty-state" class="py-10 text-center text-xs text-slate-500">
+                    No late-joined student records yet.
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ========================================================= -->
+    <!-- MODALS (View Details, Mark Joined Date, Confirm Delete)   -->
+    <!-- ========================================================= -->
+
+    <!-- Modal 1: View Session Details -->
+    <div id="modal-view-session" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-2xl w-full max-h-[88vh] flex flex-col overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                <div>
+                    <h3 id="modal-session-title" class="text-base font-bold text-slate-900">Session Details</h3>
+                    <p id="modal-session-subtitle" class="text-xs text-slate-500 mt-0.5"></p>
+                </div>
+                <button onclick="closeModal('modal-view-session')" class="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-200/60">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="p-6 overflow-y-auto space-y-5 text-sm">
+                <!-- Present List -->
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="font-semibold text-emerald-700 flex items-center gap-1.5">
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                            Present Roll Numbers (<span id="modal-present-count">0</span>)
+                        </span>
+                        <button onclick="copyRollList('present')" class="text-xs text-slate-500 hover:text-slate-800 underline">Copy List</button>
+                    </div>
+                    <div id="modal-present-list" class="p-3 bg-emerald-50/60 border border-emerald-200 rounded-xl text-xs text-emerald-950 leading-relaxed font-mono break-words"></div>
+                </div>
+
+                <!-- Absent List -->
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="font-semibold text-rose-700 flex items-center gap-1.5">
+                            <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                            Absent Roll Numbers (<span id="modal-absent-count">0</span>)
+                        </span>
+                        <button onclick="copyRollList('absent')" class="text-xs text-slate-500 hover:text-slate-800 underline">Copy List</button>
+                    </div>
+                    <div id="modal-absent-list" class="p-3 bg-rose-50/60 border border-rose-200 rounded-xl text-xs text-rose-950 leading-relaxed font-mono break-words"></div>
+                </div>
+
+                <!-- Not Joined List -->
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="font-semibold text-slate-600 flex items-center gap-1.5">
+                            <span class="w-2.5 h-2.5 rounded-full bg-slate-400"></span>
+                            Not Joined Roll Numbers (<span id="modal-nj-count">0</span>)
+                        </span>
+                    </div>
+                    <div id="modal-nj-list" class="p-3 bg-slate-100 border border-slate-200 rounded-xl text-xs text-slate-700 leading-relaxed font-mono break-words"></div>
+                </div>
+            </div>
+            <div class="px-6 py-3.5 border-t border-slate-100 bg-slate-50 flex flex-wrap items-center justify-between gap-2">
+                <div class="flex items-center gap-2">
+                    <button id="modal-view-edit-btn" class="px-3.5 py-2 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 text-xs font-semibold rounded-xl transition inline-flex items-center gap-1.5">
+                        <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
+                        <span>Edit Session</span>
+                    </button>
+                    <button id="modal-view-delete-btn" class="px-3.5 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-semibold rounded-xl transition inline-flex items-center gap-1.5">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                        <span>Delete Session</span>
+                    </button>
+                </div>
+                <button onclick="closeModal('modal-view-session')" class="px-4 py-2 bg-slate-800 text-white text-xs font-semibold rounded-xl hover:bg-slate-900">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 2: Mark Student as Joined (Date Picker) -->
+    <div id="modal-mark-joined" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-md w-full overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                <h3 id="modal-mj-title" class="text-base font-bold text-slate-900">Mark Student as Joined</h3>
+                <button onclick="closeModal('modal-mark-joined')" class="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                <p class="text-xs text-slate-600 leading-relaxed">
+                    Recording joining date for <strong class="text-slate-900">Roll Number <span id="modal-mj-roll"></span></strong>. Once marked as joined, this roll number will become active in the attendance sheet.
+                </p>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">Joining Date *</label>
+                    <input type="date" id="modal-mj-date" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                </div>
+            </div>
+            <div class="px-6 py-3.5 border-t border-slate-100 bg-slate-50 flex justify-end gap-2">
+                <button onclick="closeModal('modal-mark-joined')" class="px-4 py-2 bg-white border border-slate-300 text-slate-700 text-xs font-semibold rounded-xl hover:bg-slate-100">Cancel</button>
+                <button onclick="confirmMarkJoined()" class="px-4 py-2 bg-emerald-600 text-white text-xs font-semibold rounded-xl hover:bg-emerald-700">Save Joining Date</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 3: Edit Not Joined / Late Joined Student Record -->
+    <div id="modal-edit-student" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-md w-full overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                <h3 id="modal-es-title" class="text-base font-bold text-slate-900">Edit Student Record</h3>
+                <button onclick="closeModal('modal-edit-student')" class="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">Roll Number (1–250) *</label>
+                    <input type="number" id="modal-es-roll" min="1" max="250" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                </div>
+                <div id="modal-es-date-group" class="hidden">
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">Joining Date *</label>
+                    <input type="date" id="modal-es-date" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">Remark / Note</label>
+                    <input type="text" id="modal-es-remark" placeholder="Optional note..." class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                </div>
+            </div>
+            <div class="px-6 py-3.5 border-t border-slate-100 bg-slate-50 flex justify-end gap-2">
+                <button onclick="closeModal('modal-edit-student')" class="px-4 py-2 bg-white border border-slate-300 text-slate-700 text-xs font-semibold rounded-xl hover:bg-slate-100">Cancel</button>
+                <button onclick="saveEditedStudentRecord()" class="px-4 py-2 bg-emerald-600 text-white text-xs font-semibold rounded-xl hover:bg-emerald-700">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 4: Rename Professor Modal -->
+    <div id="modal-rename-prof" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-md w-full overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                <h3 class="text-base font-bold text-slate-900">Edit Professor Name</h3>
+                <button onclick="closeModal('modal-rename-prof')" class="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                <p class="text-xs text-slate-600">Update the name for <strong id="modal-rp-old"></strong> across all recorded sessions.</p>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">New Professor Name *</label>
+                    <input type="text" id="modal-rp-new" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                </div>
+            </div>
+            <div class="px-6 py-3.5 border-t border-slate-100 bg-slate-50 flex justify-end gap-2">
+                <button onclick="closeModal('modal-rename-prof')" class="px-4 py-2 bg-white border border-slate-300 text-slate-700 text-xs font-semibold rounded-xl hover:bg-slate-100">Cancel</button>
+                <button onclick="confirmRenameProfessor()" class="px-4 py-2 bg-emerald-600 text-white text-xs font-semibold rounded-xl hover:bg-emerald-700">Update Name</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 5: Custom Confirmation Dialog (Replaces native confirm) -->
+    <div id="modal-confirm" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-sm w-full overflow-hidden">
+            <div class="p-6 text-center space-y-3">
+                <div class="w-12 h-12 rounded-full bg-rose-100 text-rose-600 mx-auto flex items-center justify-center">
+                    <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+                </div>
+                <h3 id="modal-confirm-title" class="text-base font-bold text-slate-900">Confirm Action</h3>
+                <p id="modal-confirm-msg" class="text-xs text-slate-600 leading-relaxed">Are you sure you want to proceed?</p>
+            </div>
+            <div class="px-6 py-3.5 border-t border-slate-100 bg-slate-50 flex justify-center gap-3">
+                <button onclick="closeModal('modal-confirm')" class="flex-1 px-4 py-2 bg-white border border-slate-300 text-slate-700 text-xs font-semibold rounded-xl hover:bg-slate-100">Cancel</button>
+                <button id="modal-confirm-btn" class="flex-1 px-4 py-2 bg-rose-600 text-white text-xs font-semibold rounded-xl hover:bg-rose-700">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 6: Academic Session / Batch Manager -->
+    <div id="modal-session-manager" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-lg w-full overflow-hidden flex flex-col max-h-[88vh]">
+            <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                <div>
+                    <h3 class="text-base font-bold text-slate-900">Manage Academic Sessions / Batches</h3>
+                    <p class="text-xs text-slate-500 mt-0.5">Add, rename, switch, or delete academic sessions (e.g., 2025-2026, 2026-2027).</p>
+                </div>
+                <button onclick="closeModal('modal-session-manager')" class="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-4 overflow-y-auto">
+                <div class="flex gap-2">
+                    <input type="text" id="new-academic-session-input" placeholder="e.g., 2027-2028 or Batch A" onkeydown="if(event.key==='Enter') addNewAcademicSession()" class="min-h-[42px] flex-1 px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                    <button type="button" onclick="addNewAcademicSession()" class="min-h-[42px] px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl transition inline-flex items-center gap-1.5 shrink-0">
+                        <i data-lucide="plus" class="w-4 h-4"></i>
+                        <span>Add Session</span>
+                    </button>
+                </div>
+
+                <div class="border border-slate-200 rounded-xl divide-y divide-slate-100 overflow-hidden" id="session-manager-list">
+                    <!-- Session items injected via JS -->
+                </div>
+            </div>
+            <div class="px-6 py-3.5 border-t border-slate-100 bg-slate-50 flex justify-end">
+                <button onclick="closeModal('modal-session-manager')" class="px-4 py-2 bg-slate-800 text-white text-xs font-semibold rounded-xl hover:bg-slate-900">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // =========================================================================
+        // STATE & CLOUD SYNC CONFIGURATION
+        // =========================================================================
+        const TOTAL_STUDENTS = 250;
+        const DEFAULT_SESSIONS = ['2025-2026', '2026-2027'];
+        const STORAGE_KEYS = {
+            SESSIONS: 'pharma_attendance_sessions_v1',
+            NOT_JOINED: 'pharma_not_joined_v1',
+            LATE_JOINED: 'pharma_late_joined_v1',
+            ACADEMIC_SESSIONS: 'pharma_academic_sessions_v1',
+            ACTIVE_SESSION: 'pharma_active_academic_session_v1'
+        };
+
+        let academicSessions = [...DEFAULT_SESSIONS];
+        let activeAcademicSession = '2026-2027';
+
+        let sessions = [];      // Array of { id, academicSession, date, professor, topic, present: number[], notJoinedSnapshot: number[] }
+        let notJoinedMap = {};  // Keyed by `${academicSession}::${roll}` -> { academicSession, roll, remark }
+        let lateJoinedMap = {}; // Keyed by `${academicSession}::${roll}` -> { academicSession, roll, joiningDate, remark }
+
+        // Current Marking State
+        let currentPresentSet = new Set();
+        let editingSessionId = null;
+
+        // Modal context state
+        let activeViewSession = null;
+        let pendingJoinRoll = null;
+        let isEditingLateJoinDate = false;
+        let editingStudentCtx = null; // { type: 'not-joined' | 'late-joined', oldRoll: number }
+        let renamingProfessorOldName = null;
+        let confirmCallback = null;
+
+        // Cloud Firestore state
+        let db = null;
+        let auth = null;
+        let currentUser = null;
+        let appId = 'pharmacology-attendance-app';
+        let isApplyingRemoteSnapshot = false;
+        let cloudSaveTimer = null;
+
+        function setSyncIndicator(state, label) {
+            const dot = document.getElementById('sync-status-dot');
+            const text = document.getElementById('sync-status-text');
+            if (!dot || !text) return;
+            text.textContent = label;
+            dot.classList.remove('bg-emerald-400', 'bg-amber-400', 'bg-rose-400');
+            if (state === 'live') {
+                dot.classList.add('bg-emerald-400');
+            } else if (state === 'error') {
+                dot.classList.add('bg-rose-400');
+            } else {
+                dot.classList.add('bg-amber-400');
+            }
+        }
+
+        function getSharedAttendanceDocRef() {
+            if (!db) return null;
+            return doc(db, 'artifacts', appId, 'public', 'data', 'pharmacology_attendance', 'shared_state');
+        }
+
+        async function initCloudSync() {
+            try {
+                if (typeof __app_id !== 'undefined' && __app_id) {
+                    appId = String(__app_id);
+                }
+                if (typeof __firebase_config === 'undefined' || !__firebase_config) {
+                    setSyncIndicator('live', 'Local Saved');
+                    return;
+                }
+
+                const firebaseConfig = typeof __firebase_config === 'string'
+                    ? JSON.parse(__firebase_config)
+                    : __firebase_config;
+
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                onAuthStateChanged(auth, (user) => {
+                    currentUser = user;
+                    if (!user) return;
+                    subscribeToSharedCloudState();
+                });
+            } catch (err) {
+                console.error('Cloud sync initialization error:', err);
+                setSyncIndicator('error', 'Sync Offline');
+            }
+        }
+
+        function subscribeToSharedCloudState() {
+            if (!currentUser || !db) return;
+            const docRef = getSharedAttendanceDocRef();
+            if (!docRef) return;
+
+            setSyncIndicator('syncing', 'Connecting Cloud...');
+
+            onSnapshot(docRef, async (snap) => {
+                if (!currentUser) return;
+                try {
+                    if (!snap.exists()) {
+                        await pushStateToCloud(true);
+                        setSyncIndicator('live', 'Cloud Live');
+                        return;
+                    }
+
+                    const remote = snap.data() || {};
+                    isApplyingRemoteSnapshot = true;
+
+                    if (Array.isArray(remote.academicSessions) && remote.academicSessions.length > 0) {
+                        academicSessions = remote.academicSessions;
+                    }
+                    if (remote.activeAcademicSession && academicSessions.includes(remote.activeAcademicSession)) {
+                        activeAcademicSession = remote.activeAcademicSession;
+                    } else if (!academicSessions.includes(activeAcademicSession)) {
+                        activeAcademicSession = academicSessions[academicSessions.length - 1];
+                    }
+
+                    sessions = Array.isArray(remote.sessions) ? remote.sessions : [];
+                    notJoinedMap = (remote.notJoinedMap && typeof remote.notJoinedMap === 'object') ? remote.notJoinedMap : {};
+                    lateJoinedMap = (remote.lateJoinedMap && typeof remote.lateJoinedMap === 'object') ? remote.lateJoinedMap : {};
+
+                    migrateLegacyDataIfNeeded(false);
+                    persistLocalMirror();
+
+                    updateAllDropdownsAndBadges();
+                    renderRollGrid();
+                    renderRecordsTable();
+                    renderSummaryTables();
+                    renderNotJoinedTables();
+                    setSyncIndicator('live', 'Cloud Live');
+                } catch (err) {
+                    console.error('Error applying cloud snapshot:', err);
+                    setSyncIndicator('error', 'Sync Error');
+                } finally {
+                    isApplyingRemoteSnapshot = false;
+                }
+            }, (err) => {
+                console.error('Firestore onSnapshot error:', err);
+                setSyncIndicator('error', 'Sync Error');
+            });
+        }
+
+        async function pushStateToCloud(forceInitial = false) {
+            if (!currentUser || !db || isApplyingRemoteSnapshot) return;
+            const docRef = getSharedAttendanceDocRef();
+            if (!docRef) return;
+
+            try {
+                setSyncIndicator('syncing', 'Saving Cloud...');
+                const existing = forceInitial ? await getDoc(docRef) : null;
+                if (forceInitial && existing && existing.exists()) return;
+
+                await setDoc(docRef, {
+                    department: 'Department of Pharmacology',
+                    updatedAt: new Date().toISOString(),
+                    updatedBy: currentUser.uid,
+                    academicSessions,
+                    activeAcademicSession,
+                    sessions,
+                    notJoinedMap,
+                    lateJoinedMap
+                });
+                setSyncIndicator('live', 'Cloud Live');
+            } catch (err) {
+                console.error('Error pushing state to cloud:', err);
+                setSyncIndicator('error', 'Sync Error');
+            }
+        }
+
+        function scheduleCloudSave() {
+            if (isApplyingRemoteSnapshot) return;
+            if (!currentUser || !db) return;
+            setSyncIndicator('syncing', 'Saving...');
+            clearTimeout(cloudSaveTimer);
+            cloudSaveTimer = setTimeout(() => {
+                pushStateToCloud(false);
+            }, 250);
+        }
+
+        // =========================================================================
+        // INITIALIZATION
+        // =========================================================================
+        window.addEventListener('DOMContentLoaded', () => {
+            loadDataFromStorage();
+            setDefaultDate();
+            updateAllDropdownsAndBadges();
+            renderRollGrid();
+            renderRecordsTable();
+            renderSummaryTables();
+            renderNotJoinedTables();
+            lucide.createIcons();
+            initCloudSync();
+        });
+
+        function makeStudentKey(sessionName, roll) {
+            return `${sessionName}::${roll}`;
+        }
+
+        function migrateLegacyDataIfNeeded(shouldSave = true) {
+            let changed = false;
+
+            sessions.forEach(s => {
+                if (!s.academicSession) {
+                    s.academicSession = activeAcademicSession || '2026-2027';
+                    changed = true;
+                }
+            });
+
+            const newNJ = {};
+            Object.entries(notJoinedMap || {}).forEach(([key, val]) => {
+                if (key.includes('::')) {
+                    newNJ[key] = val;
+                } else {
+                    const roll = Number(val.roll || key);
+                    const sess = val.academicSession || activeAcademicSession || '2026-2027';
+                    newNJ[makeStudentKey(sess, roll)] = {
+                        academicSession: sess,
+                        roll,
+                        remark: val.remark || 'Not Joined Yet'
+                    };
+                    changed = true;
+                }
+            });
+            notJoinedMap = newNJ;
+
+            const newLJ = {};
+            Object.entries(lateJoinedMap || {}).forEach(([key, val]) => {
+                if (key.includes('::')) {
+                    newLJ[key] = val;
+                } else {
+                    const roll = Number(val.roll || key);
+                    const sess = val.academicSession || activeAcademicSession || '2026-2027';
+                    newLJ[makeStudentKey(sess, roll)] = {
+                        academicSession: sess,
+                        roll,
+                        joiningDate: val.joiningDate || '',
+                        remark: val.remark || ''
+                    };
+                    changed = true;
+                }
+            });
+            lateJoinedMap = newLJ;
+
+            if (changed && shouldSave) saveDataToStorage();
+        }
+
+        function loadDataFromStorage() {
+            try {
+                const rawAcademic = localStorage.getItem(STORAGE_KEYS.ACADEMIC_SESSIONS);
+                const rawActiveSess = localStorage.getItem(STORAGE_KEYS.ACTIVE_SESSION);
+                const rawSessions = localStorage.getItem(STORAGE_KEYS.SESSIONS);
+                const rawNJ = localStorage.getItem(STORAGE_KEYS.NOT_JOINED);
+                const rawLJ = localStorage.getItem(STORAGE_KEYS.LATE_JOINED);
+
+                academicSessions = rawAcademic ? JSON.parse(rawAcademic) : [...DEFAULT_SESSIONS];
+                if (!Array.isArray(academicSessions) || academicSessions.length === 0) {
+                    academicSessions = [...DEFAULT_SESSIONS];
+                }
+                activeAcademicSession = (rawActiveSess && academicSessions.includes(rawActiveSess))
+                    ? rawActiveSess
+                    : academicSessions[academicSessions.length - 1];
+
+                sessions = rawSessions ? JSON.parse(rawSessions) : [];
+                notJoinedMap = rawNJ ? JSON.parse(rawNJ) : {};
+                lateJoinedMap = rawLJ ? JSON.parse(rawLJ) : {};
+
+                migrateLegacyDataIfNeeded(false);
+            } catch (err) {
+                console.error('Error loading localStorage data:', err);
+                academicSessions = [...DEFAULT_SESSIONS];
+                activeAcademicSession = '2026-2027';
+                sessions = [];
+                notJoinedMap = {};
+                lateJoinedMap = {};
+            }
+        }
+
+        function persistLocalMirror() {
+            try {
+                localStorage.setItem(STORAGE_KEYS.ACADEMIC_SESSIONS, JSON.stringify(academicSessions));
+                localStorage.setItem(STORAGE_KEYS.ACTIVE_SESSION, activeAcademicSession);
+                localStorage.setItem(STORAGE_KEYS.SESSIONS, JSON.stringify(sessions));
+                localStorage.setItem(STORAGE_KEYS.NOT_JOINED, JSON.stringify(notJoinedMap));
+                localStorage.setItem(STORAGE_KEYS.LATE_JOINED, JSON.stringify(lateJoinedMap));
+            } catch (err) {
+                console.error('Local cache write error:', err);
+            }
+        }
+
+        function saveDataToStorage() {
+            persistLocalMirror();
+            scheduleCloudSave();
+        }
+
+        // =========================================================================
+        // ACADEMIC SESSION / BATCH MANAGEMENT
+        // =========================================================================
+        function handleGlobalSessionChange() {
+            const val = document.getElementById('global-session-select').value;
+            setActiveAcademicSession(val);
+        }
+
+        function syncSessionFromMarkForm() {
+            const val = document.getElementById('session-batch-select').value;
+            setActiveAcademicSession(val);
+        }
+
+        function setActiveAcademicSession(sessionName) {
+            if (!academicSessions.includes(sessionName)) return;
+            activeAcademicSession = sessionName;
+            saveDataToStorage();
+            updateAllDropdownsAndBadges();
+            renderRollGrid();
+            renderRecordsTable();
+            renderSummaryTables();
+            renderNotJoinedTables();
+        }
+
+        function openSessionManagerModal() {
+            renderSessionManagerList();
+            document.getElementById('modal-session-manager').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function renderSessionManagerList() {
+            const container = document.getElementById('session-manager-list');
+            container.innerHTML = academicSessions.map(sess => {
+                const isCurrent = sess === activeAcademicSession;
+                const classCount = sessions.filter(s => s.academicSession === sess).length;
+                return `
+                    <div class="px-4 py-3 flex items-center justify-between gap-2 ${isCurrent ? 'bg-emerald-50/60' : 'bg-white'}">
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm font-bold text-slate-900 truncate">${escapeHtml(sess)}</span>
+                                ${isCurrent ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">Active</span>' : ''}
+                            </div>
+                            <p class="text-xs text-slate-500">${classCount} class session(s) recorded</p>
+                        </div>
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            ${!isCurrent ? `<button type="button" onclick="setActiveAcademicSession('${escapeHtml(sess)}'); renderSessionManagerList();" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition">Switch</button>` : ''}
+                            <button type="button" onclick="promptRenameAcademicSession('${escapeHtml(sess)}')" title="Rename Session" class="p-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 rounded-lg transition">
+                                <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
+                            </button>
+                            ${academicSessions.length > 1 ? `
+                                <button type="button" onclick="promptDeleteAcademicSession('${escapeHtml(sess)}')" title="Delete Session" class="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg transition">
+                                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        function addNewAcademicSession() {
+            const input = document.getElementById('new-academic-session-input');
+            const name = input.value.trim();
+            if (!name) {
+                showToast('Please enter a session name (e.g., 2027-2028).', 'warning');
+                return;
+            }
+            if (academicSessions.includes(name)) {
+                showToast(`Session "${name}" already exists.`, 'warning');
+                return;
+            }
+            academicSessions.push(name);
+            activeAcademicSession = name;
+            input.value = '';
+            saveDataToStorage();
+            updateAllDropdownsAndBadges();
+            renderSessionManagerList();
+            renderRollGrid();
+            renderRecordsTable();
+            renderSummaryTables();
+            renderNotJoinedTables();
+            showToast(`Added and switched to session "${name}".`, 'success');
+        }
+
+        function promptRenameAcademicSession(oldName) {
+            const modal = document.getElementById('modal-rename-prof');
+            renamingProfessorOldName = `__SESSION__::${oldName}`;
+            modal.querySelector('h3').textContent = 'Rename Academic Session';
+            document.getElementById('modal-rp-old').textContent = oldName;
+            document.getElementById('modal-rp-new').value = oldName;
+            modal.classList.remove('hidden');
+        }
+
+        function promptDeleteAcademicSession(sessName) {
+            const count = sessions.filter(s => s.academicSession === sessName).length;
+            openConfirmModal(
+                'Delete Academic Session',
+                `Delete session "${sessName}" and its ${count} class record(s)? This cannot be undone.`,
+                () => {
+                    academicSessions = academicSessions.filter(s => s !== sessName);
+                    sessions = sessions.filter(s => s.academicSession !== sessName);
+
+                    Object.keys(notJoinedMap).forEach(k => {
+                        if (k.startsWith(`${sessName}::`)) delete notJoinedMap[k];
+                    });
+                    Object.keys(lateJoinedMap).forEach(k => {
+                        if (k.startsWith(`${sessName}::`)) delete lateJoinedMap[k];
+                    });
+
+                    if (activeAcademicSession === sessName) {
+                        activeAcademicSession = academicSessions[0];
+                    }
+                    saveDataToStorage();
+                    updateAllDropdownsAndBadges();
+                    renderSessionManagerList();
+                    renderRollGrid();
+                    renderRecordsTable();
+                    renderSummaryTables();
+                    renderNotJoinedTables();
+                    showToast(`Deleted session "${sessName}".`, 'info');
+                }
+            );
+        }
+
+        function setDefaultDate() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('session-date').value = today;
+        }
+
+        // =========================================================================
+        // TAB NAVIGATION
+        // =========================================================================
+        function switchTab(tabKey) {
+            document.querySelectorAll('.tab-section').forEach(sec => sec.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('border-emerald-400', 'text-emerald-400');
+                btn.classList.add('border-transparent', 'text-slate-300');
+            });
+
+            document.getElementById(`tab-${tabKey}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tab-btn-${tabKey}`);
+            activeBtn.classList.remove('border-transparent', 'text-slate-300');
+            activeBtn.classList.add('border-emerald-400', 'text-emerald-400');
+
+            if (tabKey === 'mark') renderRollGrid();
+            if (tabKey === 'records') renderRecordsTable();
+            if (tabKey === 'summary') renderSummaryTables();
+            if (tabKey === 'not-joined') renderNotJoinedTables();
+        }
+
+        // =========================================================================
+        // TAB 1: MARK ATTENDANCE LOGIC
+        // =========================================================================
+        function getNotJoinedRollsSet(sessionName = activeAcademicSession) {
+            const set = new Set();
+            Object.values(notJoinedMap).forEach(item => {
+                if (item.academicSession === sessionName) {
+                    set.add(Number(item.roll));
+                }
+            });
+            return set;
+        }
+
+        function renderRollGrid() {
+            const grid = document.getElementById('roll-grid');
+            const searchVal = document.getElementById('grid-search-roll').value.trim();
+            const searchNum = searchVal ? parseInt(searchVal, 10) : null;
+            const selectedBatch = document.getElementById('session-batch-select').value || activeAcademicSession;
+            const notJoinedSet = getNotJoinedRollsSet(selectedBatch);
+
+            let html = '';
+            for (let roll = 1; roll <= TOTAL_STUDENTS; roll++) {
+                if (searchVal && !String(roll).includes(searchVal)) {
+                    continue;
+                }
+
+                const isNotJoined = notJoinedSet.has(roll);
+                const isPresent = !isNotJoined && currentPresentSet.has(roll);
+                const isExactMatch = searchNum === roll;
+
+                if (isNotJoined) {
+                    html += `
+                        <button type="button" disabled title="Roll ${roll} is marked as Not Joined in ${escapeHtml(selectedBatch)}"
+                            class="roll-btn py-2 px-1 rounded-xl border border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed flex flex-col items-center justify-center">
+                            <span class="text-xs font-bold">${roll}</span>
+                            <span class="text-[9px] uppercase tracking-tighter font-medium">Not Joined</span>
+                        </button>
+                    `;
+                } else if (isPresent) {
+                    html += `
+                        <button type="button" onclick="toggleRoll(${roll})"
+                            class="roll-btn py-2 px-1 rounded-xl border border-emerald-600 bg-emerald-500 text-white shadow-xs hover:bg-emerald-600 flex flex-col items-center justify-center ${isExactMatch ? 'ring-2 ring-amber-400 ring-offset-1' : ''}">
+                            <span class="text-xs font-bold">${roll}</span>
+                            <span class="text-[9px] uppercase tracking-wider font-semibold text-emerald-100">Present</span>
+                        </button>
+                    `;
+                } else {
+                    html += `
+                        <button type="button" onclick="toggleRoll(${roll})"
+                            class="roll-btn py-2 px-1 rounded-xl border border-rose-200 bg-rose-50/70 text-rose-800 hover:bg-rose-100 flex flex-col items-center justify-center ${isExactMatch ? 'ring-2 ring-amber-400 ring-offset-1' : ''}">
+                            <span class="text-xs font-bold">${roll}</span>
+                            <span class="text-[9px] uppercase tracking-wider font-medium text-rose-500">Absent</span>
+                        </button>
+                    `;
+                }
+            }
+
+            if (!html) {
+                html = `<div class="col-span-full py-8 text-center text-xs text-slate-500">No roll number matching "${escapeHtml(searchVal)}".</div>`;
+            }
+
+            grid.innerHTML = html;
+            updateLiveCounters();
+        }
+
+        function toggleRoll(roll) {
+            const selectedBatch = document.getElementById('session-batch-select').value || activeAcademicSession;
+            if (notJoinedMap[makeStudentKey(selectedBatch, roll)]) return;
+            if (currentPresentSet.has(roll)) {
+                currentPresentSet.delete(roll);
+            } else {
+                currentPresentSet.add(roll);
+            }
+            renderRollGrid();
+        }
+
+        function markAllActivePresent() {
+            const selectedBatch = document.getElementById('session-batch-select').value || activeAcademicSession;
+            const notJoinedSet = getNotJoinedRollsSet(selectedBatch);
+            for (let r = 1; r <= TOTAL_STUDENTS; r++) {
+                if (!notJoinedSet.has(r)) {
+                    currentPresentSet.add(r);
+                }
+            }
+            renderRollGrid();
+            showToast('All active students marked Present.', 'success');
+        }
+
+        function clearAllPresent() {
+            currentPresentSet.clear();
+            hideFeedbackBadges();
+            renderRollGrid();
+            showToast('Cleared all selections (all active marked Absent).', 'info');
+        }
+
+        function hideFeedbackBadges() {
+            const pBadge = document.getElementById('badge-present-feedback');
+            const aBadge = document.getElementById('badge-absent-feedback');
+            if (pBadge) pBadge.classList.add('hidden');
+            if (aBadge) aBadge.classList.add('hidden');
+        }
+
+        function parseRollInputString(raw) {
+            const selectedBatch = document.getElementById('session-batch-select').value || activeAcademicSession;
+            const notJoinedSet = getNotJoinedRollsSet(selectedBatch);
+            const parsedRolls = new Set();
+            const skippedNotJoined = [];
+
+            raw.split(',').forEach(part => {
+                const trimmed = part.trim();
+                if (!trimmed) return;
+
+                if (trimmed.includes('-')) {
+                    const [startStr, endStr] = trimmed.split('-');
+                    const start = parseInt(startStr.trim(), 10);
+                    const end = parseInt(endStr.trim(), 10);
+                    if (!isNaN(start) && !isNaN(end) && start <= end) {
+                        for (let r = Math.max(1, start); r <= Math.min(TOTAL_STUDENTS, end); r++) {
+                            if (notJoinedSet.has(r)) {
+                                skippedNotJoined.push(r);
+                            } else {
+                                parsedRolls.add(r);
+                            }
+                        }
+                    }
+                } else {
+                    const num = parseInt(trimmed, 10);
+                    if (!isNaN(num) && num >= 1 && num <= TOTAL_STUDENTS) {
+                        if (notJoinedSet.has(num)) {
+                            skippedNotJoined.push(num);
+                        } else {
+                            parsedRolls.add(num);
+                        }
+                    }
+                }
+            });
+
+            return { parsedRolls, skippedNotJoined: [...new Set(skippedNotJoined)], notJoinedSet };
+        }
+
+        function applyPresentRolls(additive = false) {
+            const inputEl = document.getElementById('quick-present-input');
+            const raw = inputEl.value.trim();
+            if (!raw) {
+                showToast('Please enter at least one Present roll number.', 'warning');
+                return;
+            }
+
+            const { parsedRolls, skippedNotJoined, notJoinedSet } = parseRollInputString(raw);
+            if (parsedRolls.size === 0 && skippedNotJoined.length === 0) {
+                showToast('No valid roll numbers (1–250) found.', 'error');
+                return;
+            }
+
+            if (!additive) {
+                currentPresentSet.clear();
+            }
+            parsedRolls.forEach(r => currentPresentSet.add(r));
+
+            inputEl.value = '';
+            renderRollGrid();
+
+            const presentCount = Array.from(currentPresentSet).filter(r => !notJoinedSet.has(r)).length;
+            const absentCount = TOTAL_STUDENTS - notJoinedSet.size - presentCount;
+
+            const badge = document.getElementById('badge-present-feedback');
+            badge.textContent = `Marked ${presentCount} Present, ${absentCount} Absent`;
+            badge.classList.remove('hidden');
+            document.getElementById('badge-absent-feedback').classList.add('hidden');
+
+            const baseMsg = additive
+                ? `Added ${parsedRolls.size} roll(s) to Present (${presentCount} Present, ${absentCount} Absent).`
+                : `Marked ${presentCount} rolls Present, remaining ${absentCount} rolls Absent.`;
+
+            if (skippedNotJoined.length > 0) {
+                showToast(`${baseMsg} Skipped Not Joined: ${skippedNotJoined.join(', ')}`, 'warning');
+            } else {
+                showToast(baseMsg, 'success');
+            }
+        }
+
+        function applyAbsentRolls(additive = false) {
+            const inputEl = document.getElementById('quick-absent-input');
+            const raw = inputEl.value.trim();
+            if (!raw) {
+                showToast('Please enter at least one Absent roll number.', 'warning');
+                return;
+            }
+
+            const { parsedRolls, skippedNotJoined, notJoinedSet } = parseRollInputString(raw);
+            if (parsedRolls.size === 0 && skippedNotJoined.length === 0) {
+                showToast('No valid roll numbers (1–250) found.', 'error');
+                return;
+            }
+
+            if (!additive) {
+                currentPresentSet.clear();
+                for (let r = 1; r <= TOTAL_STUDENTS; r++) {
+                    if (!notJoinedSet.has(r) && !parsedRolls.has(r)) {
+                        currentPresentSet.add(r);
+                    }
+                }
+            } else {
+                parsedRolls.forEach(r => currentPresentSet.delete(r));
+            }
+
+            inputEl.value = '';
+            renderRollGrid();
+
+            const presentCount = Array.from(currentPresentSet).filter(r => !notJoinedSet.has(r)).length;
+            const absentCount = TOTAL_STUDENTS - notJoinedSet.size - presentCount;
+
+            const badge = document.getElementById('badge-absent-feedback');
+            badge.textContent = `Marked ${absentCount} Absent, ${presentCount} Present`;
+            badge.classList.remove('hidden');
+            document.getElementById('badge-present-feedback').classList.add('hidden');
+
+            const baseMsg = additive
+                ? `Added ${parsedRolls.size} roll(s) to Absent (${absentCount} Absent, ${presentCount} Present).`
+                : `Marked ${absentCount} rolls Absent, remaining ${presentCount} rolls Present.`;
+
+            if (skippedNotJoined.length > 0) {
+                showToast(`${baseMsg} Skipped Not Joined: ${skippedNotJoined.join(', ')}`, 'warning');
+            } else {
+                showToast(baseMsg, 'success');
+            }
+        }
+
+        function updateLiveCounters() {
+            const selectedBatch = document.getElementById('session-batch-select').value || activeAcademicSession;
+            const notJoinedSet = getNotJoinedRollsSet(selectedBatch);
+            let presentCount = 0;
+            currentPresentSet.forEach(r => {
+                if (!notJoinedSet.has(r)) presentCount++;
+            });
+
+            const notJoinedCount = notJoinedSet.size;
+            const absentCount = TOTAL_STUDENTS - notJoinedCount - presentCount;
+
+            document.getElementById('count-present').textContent = presentCount;
+            document.getElementById('count-absent').textContent = absentCount;
+            document.getElementById('count-not-joined').textContent = notJoinedCount;
+        }
+
+        function saveAttendanceSession() {
+            const batchVal = document.getElementById('session-batch-select').value || activeAcademicSession;
+            const dateVal = document.getElementById('session-date').value;
+            const profVal = document.getElementById('session-professor').value.trim();
+            const topicVal = document.getElementById('session-topic').value.trim();
+
+            if (!dateVal) {
+                showToast('Please select a Class Date.', 'error');
+                return;
+            }
+            if (!profVal) {
+                showToast('Please enter the Professor Name.', 'error');
+                return;
+            }
+
+            const notJoinedArr = Array.from(getNotJoinedRollsSet(batchVal)).sort((a, b) => a - b);
+            const presentArr = Array.from(currentPresentSet)
+                .filter(r => !notJoinedMap[makeStudentKey(batchVal, r)])
+                .sort((a, b) => a - b);
+
+            if (editingSessionId) {
+                const idx = sessions.findIndex(s => s.id === editingSessionId);
+                if (idx !== -1) {
+                    sessions[idx] = {
+                        ...sessions[idx],
+                        academicSession: batchVal,
+                        date: dateVal,
+                        professor: profVal,
+                        topic: topicVal,
+                        present: presentArr,
+                        notJoinedSnapshot: notJoinedArr
+                    };
+                    showToast('Attendance record updated successfully!', 'success');
+                }
+                cancelEditSession(false);
+            } else {
+                const newSession = {
+                    id: 'sess_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+                    academicSession: batchVal,
+                    date: dateVal,
+                    professor: profVal,
+                    topic: topicVal,
+                    present: presentArr,
+                    notJoinedSnapshot: notJoinedArr
+                };
+                sessions.unshift(newSession);
+                showToast(`Saved attendance for ${profVal} (${batchVal} • ${dateVal}).`, 'success');
+
+                currentPresentSet.clear();
+                document.getElementById('session-topic').value = '';
+                document.getElementById('grid-search-roll').value = '';
+            }
+
+            saveDataToStorage();
+            updateAllDropdownsAndBadges();
+            renderRollGrid();
+        }
+
+        function startEditSession(sessionId) {
+            const session = sessions.find(s => s.id === sessionId);
+            if (!session) return;
+
+            editingSessionId = sessionId;
+            if (session.academicSession && academicSessions.includes(session.academicSession)) {
+                activeAcademicSession = session.academicSession;
+                document.getElementById('global-session-select').value = session.academicSession;
+                document.getElementById('session-batch-select').value = session.academicSession;
+            }
+            document.getElementById('session-date').value = session.date;
+            document.getElementById('session-professor').value = session.professor;
+            document.getElementById('session-topic').value = session.topic || '';
+
+            currentPresentSet = new Set(session.present);
+
+            document.getElementById('edit-mode-banner').classList.remove('hidden');
+            document.getElementById('edit-mode-subtitle').textContent = `Editing [${session.academicSession || activeAcademicSession}] session on ${formatDateReadable(session.date)} by ${session.professor}`;
+            document.getElementById('save-session-btn-text').textContent = 'Update Attendance';
+
+            switchTab('mark');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function cancelEditSession(resetForm = true) {
+            editingSessionId = null;
+            document.getElementById('edit-mode-banner').classList.add('hidden');
+            document.getElementById('save-session-btn-text').textContent = 'Save Attendance';
+
+            if (resetForm) {
+                setDefaultDate();
+                document.getElementById('session-professor').value = '';
+                document.getElementById('session-topic').value = '';
+                currentPresentSet.clear();
+                renderRollGrid();
+            }
+        }
+
+        // =========================================================================
+        // TAB 2: ATTENDANCE RECORDS (SEARCH, VIEW, EDIT, DELETE, EXCEL)
+        // =========================================================================
+        function handleExactDateFilter() {
+            const exact = document.getElementById('filter-date-exact').value;
+            if (exact) {
+                document.getElementById('filter-date-from').value = exact;
+                document.getElementById('filter-date-to').value = exact;
+            }
+            renderRecordsTable();
+        }
+
+        function getFilteredSessions() {
+            const sessFilter = document.getElementById('filter-session').value;
+            const dateFrom = document.getElementById('filter-date-from').value;
+            const dateTo = document.getElementById('filter-date-to').value;
+            const profFilter = document.getElementById('filter-professor').value;
+
+            return sessions
+                .filter(s => {
+                    if (sessFilter !== 'ALL' && s.academicSession !== sessFilter) return false;
+                    if (dateFrom && s.date < dateFrom) return false;
+                    if (dateTo && s.date > dateTo) return false;
+                    if (profFilter !== 'ALL' && s.professor !== profFilter) return false;
+                    return true;
+                })
+                .sort((a, b) => b.date.localeCompare(a.date));
+        }
+
+        function renderRecordsTable() {
+            const tbody = document.getElementById('records-table-body');
+            const emptyState = document.getElementById('records-empty-state');
+            const checkRollRaw = document.getElementById('filter-roll-status').value.trim();
+            const checkRoll = checkRollRaw ? parseInt(checkRollRaw, 10) : null;
+            const hasValidRollFilter = checkRoll && checkRoll >= 1 && checkRoll <= TOTAL_STUDENTS;
+
+            const thRollStatus = document.getElementById('th-roll-status');
+            if (hasValidRollFilter) {
+                thRollStatus.classList.remove('hidden');
+                thRollStatus.textContent = `Roll ${checkRoll} Status`;
+            } else {
+                thRollStatus.classList.add('hidden');
+            }
+
+            const filtered = getFilteredSessions();
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            let rowsHtml = '';
+
+            filtered.forEach(s => {
+                const njArr = s.notJoinedSnapshot || [];
+                const presentCount = s.present.length;
+                const njCount = njArr.length;
+                const absentCount = TOTAL_STUDENTS - njCount - presentCount;
+
+                let rollStatusCell = '';
+                if (hasValidRollFilter) {
+                    if (njArr.includes(checkRoll)) {
+                        rollStatusCell = `<td class="py-3.5 px-4 text-center"><span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600">Not Joined</span></td>`;
+                    } else if (s.present.includes(checkRoll)) {
+                        rollStatusCell = `<td class="py-3.5 px-4 text-center"><span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">Present</span></td>`;
+                    } else {
+                        rollStatusCell = `<td class="py-3.5 px-4 text-center"><span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-100 text-rose-700">Absent</span></td>`;
+                    }
+                }
+
+                rowsHtml += `
+                    <tr class="hover:bg-slate-50/80 transition">
+                        <td class="py-3.5 px-4 whitespace-nowrap">
+                            <span class="px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200 text-xs font-semibold">${escapeHtml(s.academicSession || '2026-2027')}</span>
+                        </td>
+                        <td class="py-3.5 px-4 font-medium text-slate-900 whitespace-nowrap">${formatDateReadable(s.date)}</td>
+                        <td class="py-3.5 px-4 font-semibold text-slate-800">${escapeHtml(s.professor)}</td>
+                        <td class="py-3.5 px-4 text-slate-600 text-xs max-w-[200px] truncate" title="${escapeHtml(s.topic || '-')}">${escapeHtml(s.topic || '—')}</td>
+                        <td class="py-3.5 px-4 text-center">
+                            <span class="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 font-bold text-xs border border-emerald-200">${presentCount}</span>
+                        </td>
+                        <td class="py-3.5 px-4 text-center">
+                            <span class="px-2.5 py-1 rounded-lg bg-rose-50 text-rose-700 font-bold text-xs border border-rose-200">${absentCount}</span>
+                        </td>
+                        <td class="py-3.5 px-4 text-center">
+                            <span class="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 font-semibold text-xs">${njCount}</span>
+                        </td>
+                        ${rollStatusCell}
+                        <td class="py-3.5 px-4 text-right whitespace-nowrap">
+                            <div class="inline-flex items-center gap-1.5">
+                                <button onclick="openViewSessionModal('${s.id}')" title="View Roll Details" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium transition inline-flex items-center gap-1">
+                                    <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                                    <span>View Details</span>
+                                </button>
+                                <button onclick="startEditSession('${s.id}')" title="Edit Attendance" class="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 rounded-lg text-xs font-medium transition inline-flex items-center gap-1">
+                                    <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
+                                    <span>Edit</span>
+                                </button>
+                                <button onclick="promptDeleteSession('${s.id}')" title="Delete Record" class="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-xs font-medium transition inline-flex items-center gap-1">
+                                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                    <span>Delete</span>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = rowsHtml;
+            lucide.createIcons();
+        }
+
+        function resetRecordFilters() {
+            document.getElementById('filter-session').value = activeAcademicSession;
+            document.getElementById('filter-date-exact').value = '';
+            document.getElementById('filter-date-from').value = '';
+            document.getElementById('filter-date-to').value = '';
+            document.getElementById('filter-professor').value = 'ALL';
+            document.getElementById('filter-roll-status').value = '';
+            renderRecordsTable();
+        }
+
+        function openViewSessionModal(sessionId) {
+            const s = sessions.find(item => item.id === sessionId);
+            if (!s) return;
+
+            const presentSet = new Set(s.present);
+            const njSet = new Set(s.notJoinedSnapshot || []);
+            const presentList = [];
+            const absentList = [];
+            const njList = [];
+
+            for (let r = 1; r <= TOTAL_STUDENTS; r++) {
+                if (njSet.has(r)) njList.push(r);
+                else if (presentSet.has(r)) presentList.push(r);
+                else absentList.push(r);
+            }
+
+            activeViewSession = { id: sessionId, presentList, absentList, njList };
+
+            document.getElementById('modal-session-title').textContent = `${s.professor} — ${formatDateReadable(s.date)}`;
+            document.getElementById('modal-session-subtitle').textContent = `Session: ${s.academicSession || activeAcademicSession}${s.topic ? ` • Topic: ${s.topic}` : ' • Department of Pharmacology'}`;
+
+            document.getElementById('modal-present-count').textContent = presentList.length;
+            document.getElementById('modal-absent-count').textContent = absentList.length;
+            document.getElementById('modal-nj-count').textContent = njList.length;
+
+            document.getElementById('modal-present-list').textContent = presentList.length ? presentList.join(', ') : 'None';
+            document.getElementById('modal-absent-list').textContent = absentList.length ? absentList.join(', ') : 'None';
+            document.getElementById('modal-nj-list').textContent = njList.length ? njList.join(', ') : 'None';
+
+            document.getElementById('modal-view-edit-btn').onclick = () => {
+                closeModal('modal-view-session');
+                startEditSession(sessionId);
+            };
+            document.getElementById('modal-view-delete-btn').onclick = () => {
+                closeModal('modal-view-session');
+                promptDeleteSession(sessionId);
+            };
+
+            document.getElementById('modal-view-session').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function copyRollList(type) {
+            if (!activeViewSession) return;
+            const list = type === 'present' ? activeViewSession.presentList : activeViewSession.absentList;
+            const text = list.join(', ');
+            const tempInput = document.createElement('textarea');
+            tempInput.value = text;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+            showToast(`Copied ${type} roll numbers to clipboard.`, 'success');
+        }
+
+        function promptDeleteSession(sessionId) {
+            const s = sessions.find(item => item.id === sessionId);
+            if (!s) return;
+
+            openConfirmModal(
+                'Delete Attendance Record',
+                `Are you sure you want to delete the class record for ${s.professor} on ${formatDateReadable(s.date)}? This cannot be undone.`,
+                () => {
+                    sessions = sessions.filter(item => item.id !== sessionId);
+                    if (editingSessionId === sessionId) cancelEditSession();
+                    saveDataToStorage();
+                    updateAllDropdownsAndBadges();
+                    renderRecordsTable();
+                    showToast('Attendance record deleted.', 'info');
+                }
+            );
+        }
+
+        // =========================================================================
+        // TAB 3: PROFESSOR & STUDENT SUMMARY + CUSTOM HIGHLIGHT CHECKER
+        // =========================================================================
+        function getAllProfessorsList(sessionFilter = 'ALL') {
+            const set = new Set();
+            sessions.forEach(s => {
+                if (sessionFilter !== 'ALL' && s.academicSession !== sessionFilter) return;
+                if (s.professor) set.add(s.professor.trim());
+            });
+            return Array.from(set).sort((a, b) => a.localeCompare(b));
+        }
+
+        function evaluateCondition(val, op, target) {
+            if (isNaN(target)) return false;
+            switch (op) {
+                case 'lt': return val < target;
+                case 'lte': return val <= target;
+                case 'gte': return val >= target;
+                case 'gt': return val > target;
+                default: return false;
+            }
+        }
+
+        function getHighlightStyles(colorKey) {
+            if (colorKey === 'red') {
+                return {
+                    rowClass: 'bg-rose-50/90 hover:bg-rose-100/80',
+                    badgeClass: 'bg-rose-100 text-rose-800 border border-rose-300',
+                    excelFill: 'FFECEF',
+                    excelFont: '9F1239'
+                };
+            }
+            if (colorKey === 'amber') {
+                return {
+                    rowClass: 'bg-amber-50/90 hover:bg-amber-100/80',
+                    badgeClass: 'bg-amber-100 text-amber-800 border border-amber-300',
+                    excelFill: 'FEF3C7',
+                    excelFont: '92400E'
+                };
+            }
+            return {
+                rowClass: 'bg-emerald-50/90 hover:bg-emerald-100/80',
+                badgeClass: 'bg-emerald-100 text-emerald-800 border border-emerald-300',
+                excelFill: 'DCFCE7',
+                excelFont: '166534'
+            };
+        }
+
+        function getHighlightRuleConfig() {
+            return {
+                studentEnabled: document.getElementById('hl-student-enabled').checked,
+                studentMetric: document.getElementById('hl-student-metric').value,
+                studentOp: document.getElementById('hl-student-op').value,
+                studentVal: parseFloat(document.getElementById('hl-student-val').value),
+                studentColor: document.getElementById('hl-student-color').value,
+                profEnabled: document.getElementById('hl-prof-enabled').checked,
+                profOp: document.getElementById('hl-prof-op').value,
+                profVal: parseFloat(document.getElementById('hl-prof-val').value),
+                profColor: document.getElementById('hl-prof-color').value
+            };
+        }
+
+        function renderSummaryTables() {
+            const selectedSession = document.getElementById('summary-session-filter').value || activeAcademicSession;
+            const sessionScopedClasses = selectedSession === 'ALL'
+                ? sessions
+                : sessions.filter(s => s.academicSession === selectedSession);
+
+            const profBody = document.getElementById('professor-summary-body');
+            const profEmpty = document.getElementById('professor-empty-state');
+            const professors = getAllProfessorsList(selectedSession);
+            const hlCfg = getHighlightRuleConfig();
+
+            let matchedProfCount = 0;
+            if (professors.length === 0) {
+                profBody.innerHTML = '';
+                profEmpty.classList.remove('hidden');
+            } else {
+                profEmpty.classList.add('hidden');
+                const profStyle = getHighlightStyles(hlCfg.profColor);
+                let profHtml = '';
+
+                professors.forEach((prof, idx) => {
+                    const profSessions = sessionScopedClasses.filter(s => s.professor === prof);
+                    const totalClasses = profSessions.length;
+                    const totalPresentSum = profSessions.reduce((acc, s) => acc + s.present.length, 0);
+                    const avgPresent = totalClasses > 0 ? Math.round(totalPresentSum / totalClasses) : 0;
+
+                    const isProfHighlighted = hlCfg.profEnabled && evaluateCondition(totalClasses, hlCfg.profOp, hlCfg.profVal);
+                    if (isProfHighlighted) matchedProfCount++;
+
+                    const opSymbolMap = { gte: '≥', gt: '>', lte: '≤', lt: '<' };
+                    const statusBadge = isProfHighlighted
+                        ? `<span class="px-2.5 py-0.5 rounded-full text-xs font-bold ${profStyle.badgeClass}">Matched (${opSymbolMap[hlCfg.profOp]} ${hlCfg.profVal})</span>`
+                        : `<span class="text-xs text-slate-400">Normal</span>`;
+
+                    profHtml += `
+                        <tr class="${isProfHighlighted ? profStyle.rowClass : 'hover:bg-slate-50'} transition">
+                            <td class="py-3 px-4 text-slate-500 text-xs">${idx + 1}</td>
+                            <td class="py-3 px-4 font-semibold text-slate-900">${escapeHtml(prof)}</td>
+                            <td class="py-3 px-4 text-center">
+                                <span class="px-3 py-1 rounded-full bg-slate-100 text-slate-800 font-bold text-xs">${totalClasses}</span>
+                            </td>
+                            <td class="py-3 px-4 text-center text-xs text-slate-600">${avgPresent} students / class</td>
+                            <td class="py-3 px-4 text-center">${statusBadge}</td>
+                            <td class="py-3 px-4 text-right whitespace-nowrap">
+                                <div class="inline-flex items-center gap-1.5">
+                                    <button onclick="selectProfessorInBreakdown('${escapeHtml(prof)}')" class="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg text-xs font-semibold transition">
+                                        View Breakdown
+                                    </button>
+                                    <button onclick="openRenameProfessorModal('${escapeHtml(prof)}')" title="Edit Professor Name" class="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 rounded-lg text-xs font-medium transition inline-flex items-center gap-1">
+                                        <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
+                                        <span>Edit</span>
+                                    </button>
+                                    <button onclick="promptDeleteProfessorRecords('${escapeHtml(prof)}')" title="Delete All Classes of Professor" class="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-xs font-medium transition inline-flex items-center gap-1">
+                                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                        <span>Delete</span>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                });
+                profBody.innerHTML = profHtml;
+                lucide.createIcons();
+            }
+
+            const profMatchBadge = document.getElementById('hl-prof-match-badge');
+            profMatchBadge.textContent = `${matchedProfCount} Matched`;
+            profMatchBadge.className = `px-2.5 py-0.5 rounded-full text-xs font-bold ${getHighlightStyles(hlCfg.profColor).badgeClass}`;
+
+            const selectedProf = document.getElementById('summary-professor-filter').value;
+            const searchRoll = document.getElementById('summary-roll-search').value.trim();
+            const statusFilter = document.getElementById('summary-status-filter').value;
+            const highlightFilter = document.getElementById('summary-highlight-filter').value;
+
+            const relevantSessions = selectedProf === 'ALL'
+                ? sessionScopedClasses
+                : sessionScopedClasses.filter(s => s.professor === selectedProf);
+
+            const totalClassesHeld = relevantSessions.length;
+            const studentBody = document.getElementById('student-summary-body');
+            const stuStyle = getHighlightStyles(hlCfg.studentColor);
+            const targetSessionForStatus = selectedSession === 'ALL' ? activeAcademicSession : selectedSession;
+
+            let matchedStudentCount = 0;
+            let studentHtml = '';
+
+            for (let roll = 1; roll <= TOTAL_STUDENTS; roll++) {
+                if (searchRoll && !String(roll).includes(searchRoll)) continue;
+
+                const sKey = makeStudentKey(targetSessionForStatus, roll);
+                const isNotJoined = Boolean(notJoinedMap[sKey]);
+                const lateJoinInfo = lateJoinedMap[sKey];
+
+                if (statusFilter === 'JOINED' && isNotJoined) continue;
+                if (statusFilter === 'LATE_JOINED' && !lateJoinInfo) continue;
+                if (statusFilter === 'NOT_JOINED' && !isNotJoined) continue;
+
+                let attended = 0;
+                let absent = 0;
+                relevantSessions.forEach(s => {
+                    const wasNotJoinedInSession = (s.notJoinedSnapshot || []).includes(roll);
+                    if (s.present.includes(roll)) {
+                        attended++;
+                    } else if (!wasNotJoinedInSession && !isNotJoined) {
+                        absent++;
+                    }
+                });
+
+                const effectiveTotal = isNotJoined ? 0 : (attended + absent);
+                const pctNum = effectiveTotal > 0 ? Number(((attended / effectiveTotal) * 100).toFixed(1)) : 0;
+                const pct = pctNum.toFixed(1);
+
+                const metricValue = hlCfg.studentMetric === 'pct' ? pctNum : attended;
+                const isStudentHighlighted = !isNotJoined && effectiveTotal > 0 && hlCfg.studentEnabled && evaluateCondition(metricValue, hlCfg.studentOp, hlCfg.studentVal);
+                if (isStudentHighlighted) matchedStudentCount++;
+
+                if (highlightFilter === 'HIGHLIGHTED_ONLY' && !isStudentHighlighted) continue;
+                if (highlightFilter === 'NON_HIGHLIGHTED' && isStudentHighlighted) continue;
+
+                let statusBadge = '';
+                if (isNotJoined) {
+                    statusBadge = `<span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600">Not Joined</span>`;
+                } else if (lateJoinInfo) {
+                    statusBadge = `<span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">Joined (${formatDateReadable(lateJoinInfo.joiningDate)})</span>`;
+                } else {
+                    statusBadge = `<span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700">Joined</span>`;
+                }
+
+                let pctColor = 'text-slate-500';
+                if (!isNotJoined && effectiveTotal > 0) {
+                    pctColor = pctNum >= 75 ? 'text-emerald-600 font-bold' : (pctNum >= 50 ? 'text-amber-600 font-semibold' : 'text-rose-600 font-semibold');
+                }
+
+                const opSymbolMap = { gte: '≥', gt: '>', lte: '≤', lt: '<' };
+                const unitLabel = hlCfg.studentMetric === 'pct' ? '%' : ' cls';
+                const remarkCell = isNotJoined
+                    ? `<span class="text-xs text-slate-400">Not Joined</span>`
+                    : isStudentHighlighted
+                        ? `<span class="px-2.5 py-0.5 rounded-full text-xs font-bold ${stuStyle.badgeClass}">Highlighted (${opSymbolMap[hlCfg.studentOp]} ${hlCfg.studentVal}${unitLabel})</span>`
+                        : `<span class="text-xs text-slate-400">—</span>`;
+
+                const rowBg = isNotJoined
+                    ? 'bg-slate-50/40 text-slate-400'
+                    : isStudentHighlighted
+                        ? stuStyle.rowClass
+                        : 'hover:bg-slate-50/90';
+
+                studentHtml += `
+                    <tr class="${rowBg} transition">
+                        <td class="py-2.5 px-4 font-bold ${isNotJoined ? 'text-slate-500' : 'text-slate-900'}">${roll}</td>
+                        <td class="py-2.5 px-4">${statusBadge}</td>
+                        <td class="py-2.5 px-4 text-center text-xs font-medium">${isNotJoined ? '—' : totalClassesHeld}</td>
+                        <td class="py-2.5 px-4 text-center font-semibold ${isNotJoined ? 'text-slate-400' : 'text-emerald-700'}">${isNotJoined ? '—' : attended}</td>
+                        <td class="py-2.5 px-4 text-center font-semibold ${isNotJoined ? 'text-slate-400' : 'text-rose-600'}">${isNotJoined ? '—' : absent}</td>
+                        <td class="py-2.5 px-4 text-center text-xs ${pctColor}">${isNotJoined ? 'N/A' : pct + '%'}</td>
+                        <td class="py-2.5 px-4 text-right">${remarkCell}</td>
+                    </tr>
+                `;
+            }
+
+            const stuMatchBadge = document.getElementById('hl-student-match-badge');
+            stuMatchBadge.textContent = `${matchedStudentCount} Matched`;
+            stuMatchBadge.className = `px-2.5 py-0.5 rounded-full text-xs font-bold ${stuStyle.badgeClass}`;
+
+            if (!studentHtml) {
+                studentHtml = `<tr><td colspan="7" class="py-8 text-center text-xs text-slate-500">No students match the selected filters.</td></tr>`;
+            }
+
+            studentBody.innerHTML = studentHtml;
+        }
+
+        function selectProfessorInBreakdown(profName) {
+            const selectEl = document.getElementById('summary-professor-filter');
+            selectEl.value = profName;
+            renderSummaryTables();
+            selectEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function openRenameProfessorModal(oldName) {
+            renamingProfessorOldName = oldName;
+            document.getElementById('modal-rp-old').textContent = oldName;
+            document.getElementById('modal-rp-new').value = oldName;
+            document.getElementById('modal-rename-prof').classList.remove('hidden');
+        }
+
+        function confirmRenameProfessor() {
+            const newName = document.getElementById('modal-rp-new').value.trim();
+            if (!newName) {
+                showToast('Name cannot be empty.', 'error');
+                return;
+            }
+
+            if (renamingProfessorOldName && renamingProfessorOldName.startsWith('__SESSION__::')) {
+                const oldSess = renamingProfessorOldName.replace('__SESSION__::', '');
+                const modal = document.getElementById('modal-rename-prof');
+                modal.querySelector('h3').textContent = 'Edit Professor Name';
+
+                if (newName === oldSess) {
+                    closeModal('modal-rename-prof');
+                    return;
+                }
+                if (academicSessions.includes(newName)) {
+                    showToast(`Session "${newName}" already exists.`, 'warning');
+                    return;
+                }
+
+                academicSessions = academicSessions.map(s => s === oldSess ? newName : s);
+                if (activeAcademicSession === oldSess) activeAcademicSession = newName;
+
+                sessions.forEach(s => {
+                    if (s.academicSession === oldSess) s.academicSession = newName;
+                });
+
+                const updatedNJ = {};
+                Object.values(notJoinedMap).forEach(item => {
+                    const sess = item.academicSession === oldSess ? newName : item.academicSession;
+                    updatedNJ[makeStudentKey(sess, item.roll)] = { ...item, academicSession: sess };
+                });
+                notJoinedMap = updatedNJ;
+
+                const updatedLJ = {};
+                Object.values(lateJoinedMap).forEach(item => {
+                    const sess = item.academicSession === oldSess ? newName : item.academicSession;
+                    updatedLJ[makeStudentKey(sess, item.roll)] = { ...item, academicSession: sess };
+                });
+                lateJoinedMap = updatedLJ;
+
+                closeModal('modal-rename-prof');
+                saveDataToStorage();
+                updateAllDropdownsAndBadges();
+                renderSessionManagerList();
+                renderRollGrid();
+                renderRecordsTable();
+                renderSummaryTables();
+                renderNotJoinedTables();
+                showToast(`Renamed session to "${newName}".`, 'success');
+                return;
+            }
+
+            if (newName === renamingProfessorOldName) {
+                closeModal('modal-rename-prof');
+                return;
+            }
+            sessions.forEach(s => {
+                if (s.professor === renamingProfessorOldName) {
+                    s.professor = newName;
+                }
+            });
+            closeModal('modal-rename-prof');
+            saveDataToStorage();
+            updateAllDropdownsAndBadges();
+            renderSummaryTables();
+            renderRecordsTable();
+            showToast(`Renamed professor to "${newName}".`, 'success');
+        }
+
+        function promptDeleteProfessorRecords(profName) {
+            const selectedSession = document.getElementById('summary-session-filter').value || activeAcademicSession;
+            const count = sessions.filter(s => s.professor === profName && (selectedSession === 'ALL' || s.academicSession === selectedSession)).length;
+            openConfirmModal(
+                'Delete Professor Records',
+                `Delete all ${count} class session(s) conducted by ${profName}${selectedSession !== 'ALL' ? ` in ${selectedSession}` : ''}? This action cannot be undone.`,
+                () => {
+                    sessions = sessions.filter(s => !(s.professor === profName && (selectedSession === 'ALL' || s.academicSession === selectedSession)));
+                    saveDataToStorage();
+                    updateAllDropdownsAndBadges();
+                    renderSummaryTables();
+                    renderRecordsTable();
+                    showToast(`Deleted records for ${profName}.`, 'info');
+                }
+            );
+        }
+
+        // =========================================================================
+        // TAB 4: NOT JOINED STUDENTS (INDIVIDUAL ROLL 1–250) & LATE JOINED LOG
+        // =========================================================================
+        function addNotJoinedStudent() {
+            const rollInput = document.getElementById('nj-roll-input');
+            const remarkInput = document.getElementById('nj-remark-input');
+
+            const roll = parseInt(rollInput.value.trim(), 10);
+            const remark = remarkInput.value.trim();
+
+            if (isNaN(roll) || roll < 1 || roll > TOTAL_STUDENTS) {
+                showToast('Please enter a valid single Roll Number between 1 and 250.', 'error');
+                return;
+            }
+
+            const key = makeStudentKey(activeAcademicSession, roll);
+            if (notJoinedMap[key]) {
+                showToast(`Roll Number ${roll} is already in the Not Joined list for ${activeAcademicSession}.`, 'warning');
+                return;
+            }
+
+            if (lateJoinedMap[key]) {
+                delete lateJoinedMap[key];
+            }
+
+            notJoinedMap[key] = {
+                academicSession: activeAcademicSession,
+                roll: roll,
+                remark: remark || 'Not Joined Yet'
+            };
+
+            currentPresentSet.delete(roll);
+
+            rollInput.value = '';
+            remarkInput.value = '';
+
+            saveDataToStorage();
+            updateAllDropdownsAndBadges();
+            renderNotJoinedTables();
+            renderRollGrid();
+            showToast(`Roll Number ${roll} marked as Not Joined (${activeAcademicSession}).`, 'success');
+        }
+
+        function removeNotJoinedStudent(roll) {
+            openConfirmModal(
+                'Remove from Not Joined List',
+                `Remove Roll Number ${roll} from the Not Joined list (${activeAcademicSession}) without recording a late joining date?`,
+                () => {
+                    delete notJoinedMap[makeStudentKey(activeAcademicSession, roll)];
+                    saveDataToStorage();
+                    updateAllDropdownsAndBadges();
+                    renderNotJoinedTables();
+                    renderRollGrid();
+                    showToast(`Roll Number ${roll} restored to regular active list.`, 'info');
+                }
+            );
+        }
+
+        function openMarkJoinedModal(roll, isEditDate = false) {
+            pendingJoinRoll = roll;
+            isEditingLateJoinDate = isEditDate;
+            const key = makeStudentKey(activeAcademicSession, roll);
+
+            document.getElementById('modal-mj-roll').textContent = `${roll} (${activeAcademicSession})`;
+            document.getElementById('modal-mj-title').textContent = isEditDate
+                ? `Edit Joining Date — Roll ${roll}`
+                : `Mark Roll ${roll} as Joined`;
+
+            const defaultDate = isEditDate && lateJoinedMap[key]
+                ? lateJoinedMap[key].joiningDate
+                : new Date().toISOString().split('T')[0];
+
+            document.getElementById('modal-mj-date').value = defaultDate;
+            document.getElementById('modal-mark-joined').classList.remove('hidden');
+        }
+
+        function confirmMarkJoined() {
+            const dateVal = document.getElementById('modal-mj-date').value;
+            if (!dateVal) {
+                showToast('Please select a valid Joining Date.', 'error');
+                return;
+            }
+
+            const roll = pendingJoinRoll;
+            if (!roll) return;
+            const key = makeStudentKey(activeAcademicSession, roll);
+
+            if (isEditingLateJoinDate && lateJoinedMap[key]) {
+                lateJoinedMap[key].joiningDate = dateVal;
+                showToast(`Updated joining date for Roll ${roll}.`, 'success');
+            } else {
+                const existingRemark = notJoinedMap[key] ? notJoinedMap[key].remark : '';
+                delete notJoinedMap[key];
+                lateJoinedMap[key] = {
+                    academicSession: activeAcademicSession,
+                    roll: roll,
+                    joiningDate: dateVal,
+                    remark: existingRemark === 'Not Joined Yet' ? '' : existingRemark
+                };
+                showToast(`Roll ${roll} marked as Joined on ${formatDateReadable(dateVal)}.`, 'success');
+            }
+
+            closeModal('modal-mark-joined');
+            saveDataToStorage();
+            updateAllDropdownsAndBadges();
+            renderNotJoinedTables();
+            renderRollGrid();
+        }
+
+        function revertLateJoinedToNotJoined(roll) {
+            openConfirmModal(
+                'Revert to Not Joined',
+                `Move Roll Number ${roll} back to the Not Joined list (${activeAcademicSession})?`,
+                () => {
+                    const key = makeStudentKey(activeAcademicSession, roll);
+                    const info = lateJoinedMap[key];
+                    delete lateJoinedMap[key];
+                    notJoinedMap[key] = {
+                        academicSession: activeAcademicSession,
+                        roll: roll,
+                        remark: (info && info.remark) ? info.remark : 'Not Joined Yet'
+                    };
+                    currentPresentSet.delete(roll);
+                    saveDataToStorage();
+                    updateAllDropdownsAndBadges();
+                    renderNotJoinedTables();
+                    renderRollGrid();
+                    showToast(`Roll ${roll} moved back to Not Joined.`, 'info');
+                }
+            );
+        }
+
+        function deleteLateJoinedRecord(roll) {
+            openConfirmModal(
+                'Delete Late Joined Record',
+                `Delete the late joining log for Roll Number ${roll} (${activeAcademicSession})? They will remain an active regular student.`,
+                () => {
+                    delete lateJoinedMap[makeStudentKey(activeAcademicSession, roll)];
+                    saveDataToStorage();
+                    renderNotJoinedTables();
+                    renderSummaryTables();
+                    showToast(`Deleted late-joined log for Roll ${roll}.`, 'info');
+                }
+            );
+        }
+
+        function openEditStudentModal(type, roll) {
+            editingStudentCtx = { type, oldRoll: roll };
+            const dateGroup = document.getElementById('modal-es-date-group');
+            const key = makeStudentKey(activeAcademicSession, roll);
+
+            if (type === 'not-joined') {
+                const item = notJoinedMap[key];
+                if (!item) return;
+                document.getElementById('modal-es-title').textContent = `Edit Not Joined Student — Roll ${roll}`;
+                document.getElementById('modal-es-roll').value = item.roll;
+                document.getElementById('modal-es-remark').value = item.remark === 'Not Joined Yet' ? '' : (item.remark || '');
+                dateGroup.classList.add('hidden');
+            } else {
+                const item = lateJoinedMap[key];
+                if (!item) return;
+                document.getElementById('modal-es-title').textContent = `Edit Late Joined Record — Roll ${roll}`;
+                document.getElementById('modal-es-roll').value = item.roll;
+                document.getElementById('modal-es-date').value = item.joiningDate || '';
+                document.getElementById('modal-es-remark').value = item.remark || '';
+                dateGroup.classList.remove('hidden');
+            }
+
+            document.getElementById('modal-edit-student').classList.remove('hidden');
+        }
+
+        function saveEditedStudentRecord() {
+            if (!editingStudentCtx) return;
+            const newRoll = parseInt(document.getElementById('modal-es-roll').value.trim(), 10);
+            const newRemark = document.getElementById('modal-es-remark').value.trim();
+
+            if (isNaN(newRoll) || newRoll < 1 || newRoll > TOTAL_STUDENTS) {
+                showToast('Please enter a valid Roll Number between 1 and 250.', 'error');
+                return;
+            }
+
+            const { type, oldRoll } = editingStudentCtx;
+            const oldKey = makeStudentKey(activeAcademicSession, oldRoll);
+            const newKey = makeStudentKey(activeAcademicSession, newRoll);
+
+            if (type === 'not-joined') {
+                if (newRoll !== oldRoll && notJoinedMap[newKey]) {
+                    showToast(`Roll Number ${newRoll} is already in the Not Joined list.`, 'warning');
+                    return;
+                }
+                delete notJoinedMap[oldKey];
+                delete lateJoinedMap[newKey];
+                notJoinedMap[newKey] = {
+                    academicSession: activeAcademicSession,
+                    roll: newRoll,
+                    remark: newRemark || 'Not Joined Yet'
+                };
+                currentPresentSet.delete(newRoll);
+                showToast(`Updated Not Joined record for Roll ${newRoll}.`, 'success');
+            } else {
+                const newDate = document.getElementById('modal-es-date').value;
+                if (!newDate) {
+                    showToast('Please select a valid Joining Date.', 'error');
+                    return;
+                }
+                if (newRoll !== oldRoll && (lateJoinedMap[newKey] || notJoinedMap[newKey])) {
+                    showToast(`Roll Number ${newRoll} already has a status record.`, 'warning');
+                    return;
+                }
+                delete lateJoinedMap[oldKey];
+                lateJoinedMap[newKey] = {
+                    academicSession: activeAcademicSession,
+                    roll: newRoll,
+                    joiningDate: newDate,
+                    remark: newRemark
+                };
+                showToast(`Updated Late Joined record for Roll ${newRoll}.`, 'success');
+            }
+
+            closeModal('modal-edit-student');
+            saveDataToStorage();
+            updateAllDropdownsAndBadges();
+            renderNotJoinedTables();
+            renderRollGrid();
+        }
+
+        function renderNotJoinedTables() {
+            const njList = Object.values(notJoinedMap)
+                .filter(item => item.academicSession === activeAcademicSession)
+                .sort((a, b) => a.roll - b.roll);
+            const ljList = Object.values(lateJoinedMap)
+                .filter(item => item.academicSession === activeAcademicSession)
+                .sort((a, b) => a.roll - b.roll);
+
+            const njBody = document.getElementById('not-joined-table-body');
+            const njEmpty = document.getElementById('nj-empty-state');
+            document.getElementById('nj-total-count').textContent = `${njList.length} Student${njList.length === 1 ? '' : 's'}`;
+
+            if (njList.length === 0) {
+                njBody.innerHTML = '';
+                njEmpty.classList.remove('hidden');
+            } else {
+                njEmpty.classList.add('hidden');
+                njBody.innerHTML = njList.map(item => `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="py-3 px-4 font-bold text-slate-900">Roll ${item.roll}</td>
+                        <td class="py-3 px-4">
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">Not Joined</span>
+                        </td>
+                        <td class="py-3 px-4 text-xs text-slate-600">${escapeHtml(item.remark || 'Not Joined Yet')}</td>
+                        <td class="py-3 px-4 text-right whitespace-nowrap">
+                            <div class="inline-flex items-center gap-1.5">
+                                <button onclick="openMarkJoinedModal(${item.roll}, false)" class="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold transition inline-flex items-center gap-1">
+                                    <i data-lucide="user-check" class="w-3.5 h-3.5"></i>
+                                    <span>Mark as Joined</span>
+                                </button>
+                                <button onclick="openEditStudentModal('not-joined', ${item.roll})" title="Edit" class="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 rounded-lg text-xs font-medium transition inline-flex items-center gap-1">
+                                    <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
+                                    <span>Edit</span>
+                                </button>
+                                <button onclick="removeNotJoinedStudent(${item.roll})" title="Delete" class="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-xs font-medium transition inline-flex items-center gap-1">
+                                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                    <span>Delete</span>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+
+            const ljBody = document.getElementById('late-joined-table-body');
+            const ljEmpty = document.getElementById('lj-empty-state');
+            document.getElementById('lj-total-count').textContent = `${ljList.length} Student${ljList.length === 1 ? '' : 's'}`;
+
+            if (ljList.length === 0) {
+                ljBody.innerHTML = '';
+                ljEmpty.classList.remove('hidden');
+            } else {
+                ljEmpty.classList.add('hidden');
+                ljBody.innerHTML = ljList.map(item => `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="py-3 px-4 font-bold text-slate-900">Roll ${item.roll}</td>
+                        <td class="py-3 px-4">
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">${formatDateReadable(item.joiningDate)}</span>
+                        </td>
+                        <td class="py-3 px-4 text-xs text-slate-600">${escapeHtml(item.remark || '—')}</td>
+                        <td class="py-3 px-4 text-right whitespace-nowrap">
+                            <div class="inline-flex items-center gap-1.5">
+                                <button onclick="openEditStudentModal('late-joined', ${item.roll})" title="Edit" class="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 rounded-lg text-xs font-medium transition inline-flex items-center gap-1">
+                                    <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
+                                    <span>Edit</span>
+                                </button>
+                                <button onclick="revertLateJoinedToNotJoined(${item.roll})" title="Revert to Not Joined" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium transition">
+                                    Revert
+                                </button>
+                                <button onclick="deleteLateJoinedRecord(${item.roll})" title="Delete" class="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-xs font-medium transition inline-flex items-center gap-1">
+                                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                    <span>Delete</span>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+
+            lucide.createIcons();
+        }
+
+        // =========================================================================
+        // OFFICIAL STYLED EXCEL (.XLSX) REPORT EXPORT (USING XLSX-JS-STYLE)
+        // =========================================================================
+        function buildStyledReportHeader(ws, titleLine2, subtitleLine, totalCols) {
+            const borderThin = {
+                top: { style: 'thin', color: { rgb: 'CBD5E1' } },
+                bottom: { style: 'thin', color: { rgb: 'CBD5E1' } },
+                left: { style: 'thin', color: { rgb: 'CBD5E1' } },
+                right: { style: 'thin', color: { rgb: 'CBD5E1' } }
+            };
+
+            const r0Style = {
+                font: { name: 'Calibri', sz: 15, bold: true, color: { rgb: 'FFFFFF' } },
+                fill: { fgColor: { rgb: '0F172A' } },
+                alignment: { horizontal: 'center', vertical: 'center' }
+            };
+            const r1Style = {
+                font: { name: 'Calibri', sz: 12, bold: true, color: { rgb: 'ECFDF5' } },
+                fill: { fgColor: { rgb: '065F46' } },
+                alignment: { horizontal: 'center', vertical: 'center' }
+            };
+            const r2Style = {
+                font: { name: 'Calibri', sz: 10, italic: true, color: { rgb: '1E293B' } },
+                fill: { fgColor: { rgb: 'F1F5F9' } },
+                alignment: { horizontal: 'center', vertical: 'center' },
+                border: borderThin
+            };
+
+            XLSX.utils.sheet_add_aoa(ws, [
+                ['DEPARTMENT OF PHARMACOLOGY'],
+                [titleLine2],
+                [subtitleLine],
+                ['']
+            ], { origin: 'A1' });
+
+            ws['!merges'] = [
+                { s: { r: 0, c: 0 }, e: { r: 0, c: totalCols - 1 } },
+                { s: { r: 1, c: 0 }, e: { r: 1, c: totalCols - 1 } },
+                { s: { r: 2, c: 0 }, e: { r: 2, c: totalCols - 1 } }
+            ];
+
+            for (let c = 0; c < totalCols; c++) {
+                const c0 = XLSX.utils.encode_cell({ r: 0, c });
+                const c1 = XLSX.utils.encode_cell({ r: 1, c });
+                const c2 = XLSX.utils.encode_cell({ r: 2, c });
+                if (!ws[c0]) ws[c0] = { v: '', t: 's' };
+                if (!ws[c1]) ws[c1] = { v: '', t: 's' };
+                if (!ws[c2]) ws[c2] = { v: '', t: 's' };
+                ws[c0].s = r0Style;
+                ws[c1].s = r1Style;
+                ws[c2].s = r2Style;
+            }
+
+            ws['!rows'] = [
+                { hpt: 28 },
+                { hpt: 22 },
+                { hpt: 20 },
+                { hpt: 10 }
+            ];
+        }
+
+        function styleReportTableAndFooter(ws, startRowIdx, numCols, rowStyleFn) {
+            const borderThin = {
+                top: { style: 'thin', color: { rgb: 'CBD5E1' } },
+                bottom: { style: 'thin', color: { rgb: 'CBD5E1' } },
+                left: { style: 'thin', color: { rgb: 'CBD5E1' } },
+                right: { style: 'thin', color: { rgb: 'CBD5E1' } }
+            };
+
+            const headerStyle = {
+                font: { name: 'Calibri', sz: 11, bold: true, color: { rgb: 'FFFFFF' } },
+                fill: { fgColor: { rgb: '1E293B' } },
+                alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+                border: borderThin
+            };
+
+            const range = XLSX.utils.decode_range(ws['!ref']);
+            ws['!rows'][startRowIdx] = { hpt: 26 };
+
+            for (let c = 0; c < numCols; c++) {
+                const addr = XLSX.utils.encode_cell({ r: startRowIdx, c });
+                if (ws[addr]) ws[addr].s = headerStyle;
+            }
+
+            for (let r = startRowIdx + 1; r <= range.e.r; r++) {
+                ws['!rows'][r] = { hpt: 20 };
+                const dataIndex = r - (startRowIdx + 1);
+                const customRowCfg = rowStyleFn ? rowStyleFn(dataIndex) : null;
+                const defaultFill = dataIndex % 2 === 1 ? 'F8FAFC' : 'FFFFFF';
+
+                for (let c = 0; c < numCols; c++) {
+                    const addr = XLSX.utils.encode_cell({ r, c });
+                    if (!ws[addr]) ws[addr] = { v: '', t: 's' };
+                    const isLeftCol = customRowCfg && customRowCfg.leftCols && customRowCfg.leftCols.includes(c);
+
+                    ws[addr].s = {
+                        font: {
+                            name: 'Calibri',
+                            sz: 10,
+                            bold: Boolean(customRowCfg && customRowCfg.bold),
+                            color: { rgb: (customRowCfg && customRowCfg.fontRgb) ? customRowCfg.fontRgb : '0F172A' }
+                        },
+                        fill: {
+                            fgColor: { rgb: (customRowCfg && customRowCfg.fillRgb) ? customRowCfg.fillRgb : defaultFill }
+                        },
+                        alignment: {
+                            horizontal: isLeftCol ? 'left' : 'center',
+                            vertical: 'center',
+                            wrapText: true
+                        },
+                        border: borderThin
+                    };
+                }
+            }
+
+            const footerStart = range.e.r + 3;
+            const rightSignCol = Math.max(2, numCols - 2);
+            XLSX.utils.sheet_add_aoa(ws, [
+                ['______________________________', '', '______________________________'],
+                ['Class Coordinator / Professor', '', 'Head of Department (Pharmacology)']
+            ], { origin: { r: footerStart, c: 0 } });
+
+            if (numCols >= 5) {
+                ws[XLSX.utils.encode_cell({ r: footerStart, c: 2 })] = { v: '', t: 's' };
+                ws[XLSX.utils.encode_cell({ r: footerStart + 1, c: 2 })] = { v: '', t: 's' };
+                ws[XLSX.utils.encode_cell({ r: footerStart, c: rightSignCol })] = { v: '______________________________', t: 's' };
+                ws[XLSX.utils.encode_cell({ r: footerStart + 1, c: rightSignCol })] = { v: 'Head of Department (Pharmacology)', t: 's' };
+            }
+
+            const sigStyle = {
+                font: { name: 'Calibri', sz: 10, bold: true, color: { rgb: '334155' } },
+                alignment: { horizontal: 'left', vertical: 'center' }
+            };
+            [0, 2, rightSignCol].forEach(c => {
+                const a1 = XLSX.utils.encode_cell({ r: footerStart, c });
+                const a2 = XLSX.utils.encode_cell({ r: footerStart + 1, c });
+                if (ws[a1]) ws[a1].s = sigStyle;
+                if (ws[a2]) ws[a2].s = sigStyle;
+            });
+        }
+
+        function exportOfficialReportExcel() {
+            const selectedSession = document.getElementById('summary-session-filter').value || activeAcademicSession;
+            const sessionClasses = selectedSession === 'ALL'
+                ? sessions
+                : sessions.filter(s => s.academicSession === selectedSession);
+
+            const professors = getAllProfessorsList(selectedSession);
+            const hlCfg = getHighlightRuleConfig();
+            const stuStyle = getHighlightStyles(hlCfg.studentColor);
+            const profStyle = getHighlightStyles(hlCfg.profColor);
+            const opSymbolMap = { gte: '>=', gt: '>', lte: '<=', lt: '<' };
+            const targetSessionForStatus = selectedSession === 'ALL' ? activeAcademicSession : selectedSession;
+            const generatedOn = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+
+            const wb = XLSX.utils.book_new();
+
+            const s1Headers = [
+                'Roll No.',
+                'Joining Status',
+                'Joining Date',
+                'Total Classes Held',
+                'Classes Attended',
+                'Classes Absent',
+                'Attendance %',
+                'Threshold Status',
+                ...professors.map(p => `${p} (Attended / ${sessionClasses.filter(s => s.professor === p).length})`)
+            ];
+
+            const s1Data = [];
+            const s1Meta = [];
+
+            for (let roll = 1; roll <= TOTAL_STUDENTS; roll++) {
+                const sKey = makeStudentKey(targetSessionForStatus, roll);
+                const isNotJoined = Boolean(notJoinedMap[sKey]);
+                const lateJoinInfo = lateJoinedMap[sKey];
+
+                let status = 'Joined';
+                let joiningDate = 'Regular';
+                if (isNotJoined) {
+                    status = 'Not Joined';
+                    joiningDate = 'N/A';
+                } else if (lateJoinInfo) {
+                    status = 'Late Joined';
+                    joiningDate = lateJoinInfo.joiningDate;
+                }
+
+                let totalAttended = 0;
+                let totalAbsent = 0;
+                sessionClasses.forEach(s => {
+                    const wasNJ = (s.notJoinedSnapshot || []).includes(roll);
+                    if (s.present.includes(roll)) totalAttended++;
+                    else if (!wasNJ && !isNotJoined) totalAbsent++;
+                });
+
+                const effectiveClasses = isNotJoined ? 0 : (totalAttended + totalAbsent);
+                const pctNum = effectiveClasses > 0 ? Number(((totalAttended / effectiveClasses) * 100).toFixed(1)) : 0;
+                const metricVal = hlCfg.studentMetric === 'pct' ? pctNum : totalAttended;
+                const isHighlighted = !isNotJoined && effectiveClasses > 0 && hlCfg.studentEnabled && evaluateCondition(metricVal, hlCfg.studentOp, hlCfg.studentVal);
+
+                const unitLabel = hlCfg.studentMetric === 'pct' ? '%' : ' Classes';
+                const remarkText = isNotJoined
+                    ? 'Not Joined'
+                    : isHighlighted
+                        ? `HIGHLIGHTED (${opSymbolMap[hlCfg.studentOp]} ${hlCfg.studentVal}${unitLabel})`
+                        : 'Normal';
+
+                const profCounts = professors.map(prof => {
+                    if (isNotJoined) return 'Not Joined';
+                    const pSess = sessionClasses.filter(s => s.professor === prof);
+                    return pSess.filter(s => s.present.includes(roll)).length;
+                });
+
+                s1Data.push([
+                    roll,
+                    status,
+                    joiningDate,
+                    isNotJoined ? 0 : sessionClasses.length,
+                    isNotJoined ? 0 : totalAttended,
+                    isNotJoined ? 0 : totalAbsent,
+                    isNotJoined ? 'N/A' : `${pctNum.toFixed(1)}%`,
+                    remarkText,
+                    ...profCounts
+                ]);
+
+                s1Meta.push({
+                    fillRgb: isNotJoined ? 'F1F5F9' : (isHighlighted ? stuStyle.excelFill : null),
+                    fontRgb: isNotJoined ? '64748B' : (isHighlighted ? stuStyle.excelFont : '0F172A'),
+                    bold: isHighlighted,
+                    leftCols: [7]
+                });
+            }
+
+            const ws1 = XLSX.utils.aoa_to_sheet([]);
+            const ruleDesc = hlCfg.studentEnabled
+                ? `Highlight Rule: ${hlCfg.studentMetric === 'pct' ? 'Attendance %' : 'Classes Attended'} ${opSymbolMap[hlCfg.studentOp]} ${hlCfg.studentVal}${hlCfg.studentMetric === 'pct' ? '%' : ''}`
+                : 'Highlight Rule: None';
+            buildStyledReportHeader(
+                ws1,
+                'OFFICIAL STUDENT ATTENDANCE SUMMARY REPORT (ROLL 1 – 250)',
+                `Academic Session: ${selectedSession}  |  Total Classes Held: ${sessionClasses.length}  |  ${ruleDesc}  |  Generated: ${generatedOn}`,
+                s1Headers.length
+            );
+            XLSX.utils.sheet_add_aoa(ws1, [s1Headers, ...s1Data], { origin: 'A5' });
+            styleReportTableAndFooter(ws1, 4, s1Headers.length, idx => s1Meta[idx]);
+            ws1['!cols'] = [
+                { wch: 10 }, { wch: 14 }, { wch: 14 }, { wch: 18 },
+                { wch: 17 }, { wch: 15 }, { wch: 14 }, { wch: 26 },
+                ...professors.map(() => ({ wch: 24 }))
+            ];
+            XLSX.utils.book_append_sheet(wb, ws1, '1. Student Summary Report');
+
+            const s2Headers = ['S.No.', 'Academic Session', 'Professor Name', 'Total Classes Taken', 'Avg. Students Present', 'Threshold Status'];
+            const s2Data = [];
+            const s2Meta = [];
+
+            if (professors.length === 0) {
+                s2Data.push(['-', selectedSession, 'No classes recorded yet', 0, 0, '-']);
+                s2Meta.push({ leftCols: [2] });
+            } else {
+                professors.forEach((prof, idx) => {
+                    const pSess = sessionClasses.filter(s => s.professor === prof);
+                    const count = pSess.length;
+                    const avg = count > 0 ? Number((pSess.reduce((acc, s) => acc + s.present.length, 0) / count).toFixed(1)) : 0;
+                    const isProfHl = hlCfg.profEnabled && evaluateCondition(count, hlCfg.profOp, hlCfg.profVal);
+                    const statusTxt = isProfHl ? `HIGHLIGHTED (${opSymbolMap[hlCfg.profOp]} ${hlCfg.profVal} Classes)` : 'Normal';
+
+                    s2Data.push([idx + 1, selectedSession, prof, count, avg, statusTxt]);
+                    s2Meta.push({
+                        fillRgb: isProfHl ? profStyle.excelFill : null,
+                        fontRgb: isProfHl ? profStyle.excelFont : '0F172A',
+                        bold: isProfHl,
+                        leftCols: [2, 5]
+                    });
+                });
+            }
+
+            const ws2 = XLSX.utils.aoa_to_sheet([]);
+            buildStyledReportHeader(
+                ws2,
+                'PROFESSOR LECTURE & CLASS CONDUCT REPORT',
+                `Academic Session: ${selectedSession}  |  Total Professors: ${professors.length}  |  Generated: ${generatedOn}`,
+                s2Headers.length
+            );
+            XLSX.utils.sheet_add_aoa(ws2, [s2Headers, ...s2Data], { origin: 'A5' });
+            styleReportTableAndFooter(ws2, 4, s2Headers.length, idx => s2Meta[idx]);
+            ws2['!cols'] = [{ wch: 8 }, { wch: 18 }, { wch: 28 }, { wch: 21 }, { wch: 22 }, { wch: 28 }];
+            XLSX.utils.book_append_sheet(wb, ws2, '2. Professor Class Report');
+
+            const s3Headers = [
+                'S.No.', 'Session', 'Date', 'Professor Name', 'Topic / Lecture',
+                'Present Count', 'Absent Count', 'Not Joined', 'Present Roll Numbers', 'Absent Roll Numbers'
+            ];
+            const sortedLogs = [...sessionClasses].sort((a, b) => a.date.localeCompare(b.date));
+            const s3Data = sortedLogs.length ? sortedLogs.map((s, idx) => {
+                const njArr = s.notJoinedSnapshot || [];
+                const presentSet = new Set(s.present);
+                const njSet = new Set(njArr);
+                const absentArr = [];
+                for (let r = 1; r <= TOTAL_STUDENTS; r++) {
+                    if (!njSet.has(r) && !presentSet.has(r)) absentArr.push(r);
+                }
+                return [
+                    idx + 1,
+                    s.academicSession || selectedSession,
+                    s.date,
+                    s.professor,
+                    s.topic || '—',
+                    s.present.length,
+                    absentArr.length,
+                    njArr.length,
+                    s.present.join(', ') || 'None',
+                    absentArr.join(', ') || 'None'
+                ];
+            }) : [['-', selectedSession, '-', 'No date-wise records found', '-', 0, 0, 0, '-', '-']];
+
+            const ws3 = XLSX.utils.aoa_to_sheet([]);
+            buildStyledReportHeader(
+                ws3,
+                'DATE-WISE CLASS ATTENDANCE LOG',
+                `Academic Session: ${selectedSession}  |  Total Recorded Sessions: ${sortedLogs.length}  |  Generated: ${generatedOn}`,
+                s3Headers.length
+            );
+            XLSX.utils.sheet_add_aoa(ws3, [s3Headers, ...s3Data], { origin: 'A5' });
+            styleReportTableAndFooter(ws3, 4, s3Headers.length, () => ({ leftCols: [3, 4, 8, 9] }));
+            ws3['!cols'] = [
+                { wch: 7 }, { wch: 14 }, { wch: 13 }, { wch: 24 }, { wch: 24 },
+                { wch: 14 }, { wch: 14 }, { wch: 12 }, { wch: 42 }, { wch: 42 }
+            ];
+            XLSX.utils.book_append_sheet(wb, ws3, '3. Date-Wise Class Log');
+
+            const s4Headers = ['S.No.', 'Academic Session', 'Roll Number', 'Current Status', 'Joining Date', 'Remark / Note'];
+            const njItems = Object.values(notJoinedMap)
+                .filter(item => selectedSession === 'ALL' || item.academicSession === selectedSession)
+                .sort((a, b) => a.roll - b.roll);
+            const ljItems = Object.values(lateJoinedMap)
+                .filter(item => selectedSession === 'ALL' || item.academicSession === selectedSession)
+                .sort((a, b) => a.roll - b.roll);
+
+            const s4Data = [];
+            const s4Meta = [];
+            let rowCounter = 1;
+
+            njItems.forEach(item => {
+                s4Data.push([rowCounter++, item.academicSession, item.roll, 'Not Joined', 'Pending', item.remark || 'Not Joined Yet']);
+                s4Meta.push({ fillRgb: 'FEF3C7', fontRgb: '92400E', bold: false, leftCols: [5] });
+            });
+            ljItems.forEach(item => {
+                s4Data.push([rowCounter++, item.academicSession, item.roll, 'Late Joined', item.joiningDate, item.remark || 'Joined Late']);
+                s4Meta.push({ fillRgb: 'DCFCE7', fontRgb: '166534', bold: false, leftCols: [5] });
+            });
+            if (s4Data.length === 0) {
+                s4Data.push(['-', selectedSession, '-', 'All Active', '-', 'No Not Joined or Late Joined records']);
+                s4Meta.push({ leftCols: [5] });
+            }
+
+            const ws4 = XLSX.utils.aoa_to_sheet([]);
+            buildStyledReportHeader(
+                ws4,
+                'NOT JOINED & LATE JOINED STUDENTS REGISTER',
+                `Academic Session: ${selectedSession}  |  Not Joined: ${njItems.length}  |  Late Joined: ${ljItems.length}  |  Generated: ${generatedOn}`,
+                s4Headers.length
+            );
+            XLSX.utils.sheet_add_aoa(ws4, [s4Headers, ...s4Data], { origin: 'A5' });
+            styleReportTableAndFooter(ws4, 4, s4Headers.length, idx => s4Meta[idx]);
+            ws4['!cols'] = [{ wch: 8 }, { wch: 18 }, { wch: 14 }, { wch: 16 }, { wch: 16 }, { wch: 36 }];
+            XLSX.utils.book_append_sheet(wb, ws4, '4. Not Joined & Late Joined');
+
+            const safeSessionTag = selectedSession.replace(/[^a-zA-Z0-9_-]/g, '_');
+            XLSX.writeFile(wb, `Pharmacology_Attendance_Report_${safeSessionTag}_${new Date().toISOString().split('T')[0]}.xlsx`);
+            showToast('Exported formatted Official Attendance Report (.xlsx)!', 'success');
+        }
+
+        // =========================================================================
+        // HELPERS, DROPDOWNS, MODALS & TOASTS
+        // =========================================================================
+        function updateAllDropdownsAndBadges() {
+            const professors = getAllProfessorsList('ALL');
+
+            const sessionOptionsHtml = academicSessions
+                .map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`)
+                .join('');
+
+            const globalSelect = document.getElementById('global-session-select');
+            globalSelect.innerHTML = sessionOptionsHtml;
+            globalSelect.value = activeAcademicSession;
+
+            const markBatchSelect = document.getElementById('session-batch-select');
+            markBatchSelect.innerHTML = sessionOptionsHtml;
+            markBatchSelect.value = activeAcademicSession;
+
+            const filterSessionSelect = document.getElementById('filter-session');
+            const prevFilterSess = filterSessionSelect.value;
+            filterSessionSelect.innerHTML = `<option value="ALL">All Sessions</option>` + sessionOptionsHtml;
+            filterSessionSelect.value = (prevFilterSess && (prevFilterSess === 'ALL' || academicSessions.includes(prevFilterSess)))
+                ? prevFilterSess
+                : activeAcademicSession;
+
+            const summarySessionSelect = document.getElementById('summary-session-filter');
+            const prevSumSess = summarySessionSelect.value;
+            summarySessionSelect.innerHTML = sessionOptionsHtml + `<option value="ALL">All Sessions (Combined)</option>`;
+            summarySessionSelect.value = (prevSumSess && (prevSumSess === 'ALL' || academicSessions.includes(prevSumSess)))
+                ? prevSumSess
+                : activeAcademicSession;
+
+            document.getElementById('mark-session-pill').textContent = `Session: ${activeAcademicSession}`;
+            document.getElementById('nj-session-pill').textContent = `Session: ${activeAcademicSession}`;
+
+            const datalist = document.getElementById('professor-datalist');
+            datalist.innerHTML = professors.map(p => `<option value="${escapeHtml(p)}">`).join('');
+
+            const filterProfSelect = document.getElementById('filter-professor');
+            const prevFilterVal = filterProfSelect.value;
+            filterProfSelect.innerHTML = `<option value="ALL">All Professors</option>` +
+                professors.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
+            if (professors.includes(prevFilterVal)) filterProfSelect.value = prevFilterVal;
+
+            const summaryProfSelect = document.getElementById('summary-professor-filter');
+            const prevSumVal = summaryProfSelect.value;
+            summaryProfSelect.innerHTML = `<option value="ALL">All Professors (Combined)</option>` +
+                professors.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
+            if (professors.includes(prevSumVal)) summaryProfSelect.value = prevSumVal;
+
+            const njCount = Object.values(notJoinedMap).filter(item => item.academicSession === activeAcademicSession).length;
+            document.getElementById('not-joined-badge').textContent = njCount;
+        }
+
+        function formatDateReadable(isoDate) {
+            if (!isoDate) return '';
+            const parts = isoDate.split('-');
+            if (parts.length !== 3) return isoDate;
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const mIdx = parseInt(parts[1], 10) - 1;
+            return `${parts[2]} ${months[mIdx] || parts[1]} ${parts[0]}`;
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+
+        function openConfirmModal(title, message, onConfirm) {
+            document.getElementById('modal-confirm-title').textContent = title;
+            document.getElementById('modal-confirm-msg').textContent = message;
+            confirmCallback = onConfirm;
+
+            const btn = document.getElementById('modal-confirm-btn');
+            btn.onclick = () => {
+                closeModal('modal-confirm');
+                if (confirmCallback) confirmCallback();
+            };
+
+            document.getElementById('modal-confirm').classList.remove('hidden');
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+
+            const styles = {
+                success: 'bg-emerald-900 text-white border-emerald-700',
+                error: 'bg-rose-900 text-white border-rose-700',
+                warning: 'bg-amber-900 text-white border-amber-700',
+                info: 'bg-slate-900 text-white border-slate-700'
+            };
+
+            toast.className = `pointer-events-auto px-4 py-3 rounded-xl shadow-lg border text-xs font-medium flex items-center justify-between gap-3 transition-all duration-200 ${styles[type] || styles.info}`;
+            toast.innerHTML = `<span>${escapeHtml(message)}</span>`;
+
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(6px)';
+                setTimeout(() => toast.remove(), 200);
+            }, 3200);
+        }
+
+        Object.assign(window, {
+            handleGlobalSessionChange,
+            openSessionManagerModal,
+            switchTab,
+            cancelEditSession,
+            syncSessionFromMarkForm,
+            markAllActivePresent,
+            clearAllPresent,
+            renderRollGrid,
+            applyPresentRolls,
+            applyAbsentRolls,
+            saveAttendanceSession,
+            exportOfficialReportExcel,
+            renderRecordsTable,
+            handleExactDateFilter,
+            resetRecordFilters,
+            renderSummaryTables,
+            addNotJoinedStudent,
+            closeModal,
+            copyRollList,
+            confirmMarkJoined,
+            saveEditedStudentRecord,
+            confirmRenameProfessor,
+            addNewAcademicSession,
+            setActiveAcademicSession,
+            promptRenameAcademicSession,
+            promptDeleteAcademicSession,
+            toggleRoll,
+            startEditSession,
+            openViewSessionModal,
+            promptDeleteSession,
+            selectProfessorInBreakdown,
+            openRenameProfessorModal,
+            promptDeleteProfessorRecords,
+            openMarkJoinedModal,
+            openEditStudentModal,
+            removeNotJoinedStudent,
+            revertLateJoinedToNotJoined,
+            deleteLateJoinedRecord
+        });
+    </script>
+</body>
+</html>
