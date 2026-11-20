@@ -58,7 +58,7 @@
                 </div>
                 <div class="min-w-0">
                     <h1 class="text-base sm:text-xl font-bold tracking-tight text-white truncate">Department of Pharmacology</h1>
-                    <p class="text-xs sm:text-sm text-slate-300 truncate">Attendance Management System (Roll 1 – 250)</p>
+                    <p class="text-xs sm:text-sm text-slate-300 truncate">Attendance Management System (Roll 1 – 251)</p>
                 </div>
             </div>
             <div class="flex flex-wrap items-center gap-2 self-start sm:self-auto">
@@ -98,7 +98,7 @@
                 </button>
                 <button onclick="switchTab('not-joined')" id="tab-btn-not-joined" class="tab-btn min-h-[44px] flex items-center gap-2 px-3.5 sm:px-4 py-3 text-xs sm:text-sm font-medium border-b-2 border-transparent text-slate-300 hover:text-white whitespace-nowrap transition-colors">
                     <i data-lucide="user-x" class="w-4 h-4 shrink-0"></i>
-                    <span>Not Joined Students (Roll 1–250)</span>
+                    <span>Not Joined Students (Roll 1–251)</span>
                     <span id="not-joined-badge" class="ml-1 bg-slate-700 text-slate-200 text-xs px-2 py-0.5 rounded-full">0</span>
                 </button>
             </div>
@@ -176,7 +176,7 @@
                         <div class="px-3.5 py-2 rounded-xl bg-rose-50 border border-rose-200 flex items-center gap-2">
                             <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
                             <span class="text-xs font-medium text-rose-800">Absent:</span>
-                            <span id="count-absent" class="text-sm font-bold text-rose-700">250</span>
+                            <span id="count-absent" class="text-sm font-bold text-rose-700">251</span>
                         </div>
                         <div class="px-3.5 py-2 rounded-xl bg-slate-100 border border-slate-200 flex items-center gap-2">
                             <span class="w-2.5 h-2.5 rounded-full bg-slate-400"></span>
@@ -204,7 +204,7 @@
                         <label class="block text-xs font-medium text-slate-600 mb-1">Filter / Find Roll Number in Grid</label>
                         <div class="relative">
                             <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
-                            <input type="number" id="grid-search-roll" min="1" max="250" oninput="renderRollGrid()" placeholder="Find roll (e.g., 45)..." class="min-h-[44px] w-full pl-9 pr-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                            <input type="number" id="grid-search-roll" min="1" max="251" oninput="renderRollGrid()" placeholder="Find roll (e.g., 45)..." class="min-h-[44px] w-full pl-9 pr-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
                         </div>
                     </div>
 
@@ -270,9 +270,9 @@
                     </div>
                 </div>
 
-                <!-- Roll Number Grid (1 to 250) -->
+                <!-- Roll Number Grid (1 to 251) -->
                 <div id="roll-grid" class="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 xl:grid-cols-15 gap-1.5 sm:gap-2 pt-2">
-                    <!-- Buttons 1..250 injected via JS -->
+                    <!-- Buttons 1..251 injected via JS -->
                 </div>
 
                 <!-- Save Action Footer -->
@@ -328,9 +328,9 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-medium text-slate-600 mb-1">Check Roll No. (1–250)</label>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">Check Roll No. (1–251)</label>
                         <div class="flex gap-2">
-                            <input type="number" id="filter-roll-status" min="1" max="250" oninput="renderRecordsTable()" placeholder="e.g. 24" class="min-h-[44px] w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500">
+                            <input type="number" id="filter-roll-status" min="1" max="251" oninput="renderRecordsTable()" placeholder="e.g. 24" class="min-h-[44px] w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500">
                             <button onclick="resetRecordFilters()" title="Reset Filters" class="min-h-[44px] px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl border border-slate-300 transition whitespace-nowrap">
                                 Reset
                             </button>
@@ -514,14 +514,14 @@
                 </div>
             </div>
 
-            <!-- Section B: Student Attendance Breakdown (Roll 1 to 250) -->
+            <!-- Section B: Student Attendance Breakdown (Roll 1 to 251) -->
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                 <div class="p-5 border-b border-slate-100 space-y-4">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div>
                             <h2 class="text-base font-semibold text-slate-800 flex items-center gap-2">
                                 <i data-lucide="graduation-cap" class="w-4 h-4 text-emerald-600"></i>
-                                <span>Section B: Student Attendance Breakdown (Roll 1–250)</span>
+                                <span>Section B: Student Attendance Breakdown (Roll 1–251)</span>
                             </h2>
                             <p class="text-xs text-slate-500 mt-0.5">View overall or professor-specific attendance counts and highlight status for every roll number.</p>
                         </div>
@@ -539,13 +539,13 @@
                             </select>
                         </div>
                         <div>
-                            <label class="block text-xs font-medium text-slate-600 mb-1">Search Roll Number (1–250)</label>
-                            <input type="number" id="summary-roll-search" min="1" max="250" oninput="renderSummaryTables()" placeholder="Enter Roll No..." class="min-h-[44px] w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500">
+                            <label class="block text-xs font-medium text-slate-600 mb-1">Search Roll Number (1–251)</label>
+                            <input type="number" id="summary-roll-search" min="1" max="251" oninput="renderSummaryTables()" placeholder="Enter Roll No..." class="min-h-[44px] w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500">
                         </div>
                         <div>
                             <label class="block text-xs font-medium text-slate-600 mb-1">Filter by Joining Status</label>
                             <select id="summary-status-filter" onchange="renderSummaryTables()" class="min-h-[44px] w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500">
-                                <option value="ALL">All Students (1–250)</option>
+                                <option value="ALL">All Students (1–251)</option>
                                 <option value="JOINED">Active / Joined Only</option>
                                 <option value="LATE_JOINED">Late Joined Only</option>
                                 <option value="NOT_JOINED">Not Joined Only</option>
@@ -576,7 +576,7 @@
                             </tr>
                         </thead>
                         <tbody id="student-summary-body" class="divide-y divide-slate-100 text-sm">
-                            <!-- 250 Rows injected via JS -->
+                            <!-- 251 Rows injected via JS -->
                         </tbody>
                     </table>
                 </div>
@@ -584,7 +584,7 @@
         </section>
 
         <!-- ========================================================= -->
-        <!-- TAB 4: NOT JOINED STUDENTS (ROLL 1–250)                   -->
+        <!-- TAB 4: NOT JOINED STUDENTS (ROLL 1–251)                   -->
         <!-- ========================================================= -->
         <section id="tab-not-joined" class="tab-section hidden space-y-6">
             <!-- Individual Entry Card -->
@@ -596,12 +596,12 @@
                     </h2>
                     <span id="nj-session-pill" class="px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-200 text-xs font-semibold">Session: 2026-2027</span>
                 </div>
-                <p class="text-xs text-slate-500 mb-4">Enter an individual roll number (1 to 250) that has not joined classes yet for the active session. They will be excluded from regular Absent counts until you mark them as joined.</p>
+                <p class="text-xs text-slate-500 mb-4">Enter an individual roll number (1 to 251) that has not joined classes yet for the active session. They will be excluded from regular Absent counts until you mark them as joined.</p>
 
                 <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
                     <div class="sm:col-span-3">
-                        <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">Roll Number (1–250) *</label>
-                        <input type="number" id="nj-roll-input" min="1" max="250" placeholder="e.g., 45" onkeydown="if(event.key==='Enter') addNotJoinedStudent()" class="min-h-[44px] w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                        <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">Roll Number (1–251) *</label>
+                        <input type="number" id="nj-roll-input" min="1" max="251" placeholder="e.g., 45" onkeydown="if(event.key==='Enter') addNotJoinedStudent()" class="min-h-[44px] w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
                     </div>
                     <div class="sm:col-span-6">
                         <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">Remark / Note (Optional)</label>
@@ -641,7 +641,7 @@
                     </table>
                 </div>
                 <div id="nj-empty-state" class="py-10 text-center text-xs text-slate-500">
-                    All roll numbers (1–250) are currently marked as active/joined.
+                    All roll numbers (1–251) are currently marked as active/joined.
                 </div>
             </div>
 
@@ -784,8 +784,8 @@
             </div>
             <div class="p-6 space-y-4">
                 <div>
-                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">Roll Number (1–250) *</label>
-                    <input type="number" id="modal-es-roll" min="1" max="250" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">Roll Number (1–251) *</label>
+                    <input type="number" id="modal-es-roll" min="1" max="251" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
                 </div>
                 <div id="modal-es-date-group" class="hidden">
                     <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">Joining Date *</label>
@@ -883,7 +883,7 @@
         // =========================================================================
         // STATE & CLOUD SYNC CONFIGURATION
         // =========================================================================
-        const TOTAL_STUDENTS = 250;
+        const TOTAL_STUDENTS = 251;
         const DEFAULT_SESSIONS = ['2025-2026', '2026-2027'];
         const STORAGE_KEYS = {
             SESSIONS: 'pharma_attendance_sessions_v1',
@@ -1062,7 +1062,7 @@
             clearTimeout(cloudSaveTimer);
             cloudSaveTimer = setTimeout(() => {
                 pushStateToCloud(false);
-            }, 250);
+            }, 251);
         }
 
         // =========================================================================
@@ -1481,7 +1481,7 @@
 
             const { parsedRolls, skippedNotJoined, notJoinedSet } = parseRollInputString(raw);
             if (parsedRolls.size === 0 && skippedNotJoined.length === 0) {
-                showToast('No valid roll numbers (1–250) found.', 'error');
+                showToast('No valid roll numbers (1–251) found.', 'error');
                 return;
             }
 
@@ -1522,7 +1522,7 @@
 
             const { parsedRolls, skippedNotJoined, notJoinedSet } = parseRollInputString(raw);
             if (parsedRolls.size === 0 && skippedNotJoined.length === 0) {
-                showToast('No valid roll numbers (1–250) found.', 'error');
+                showToast('No valid roll numbers (1–251) found.', 'error');
                 return;
             }
 
@@ -2204,7 +2204,7 @@
         }
 
         // =========================================================================
-        // TAB 4: NOT JOINED STUDENTS (INDIVIDUAL ROLL 1–250) & LATE JOINED LOG
+        // TAB 4: NOT JOINED STUDENTS (INDIVIDUAL ROLL 1–251) & LATE JOINED LOG
         // =========================================================================
         function addNotJoinedStudent() {
             const rollInput = document.getElementById('nj-roll-input');
@@ -2214,7 +2214,7 @@
             const remark = remarkInput.value.trim();
 
             if (isNaN(roll) || roll < 1 || roll > TOTAL_STUDENTS) {
-                showToast('Please enter a valid single Roll Number between 1 and 250.', 'error');
+                showToast('Please enter a valid single Roll Number between 1 and 251.', 'error');
                 return;
             }
 
@@ -2380,7 +2380,7 @@
             const newRemark = document.getElementById('modal-es-remark').value.trim();
 
             if (isNaN(newRoll) || newRoll < 1 || newRoll > TOTAL_STUDENTS) {
-                showToast('Please enter a valid Roll Number between 1 and 250.', 'error');
+                showToast('Please enter a valid Roll Number between 1 and 251.', 'error');
                 return;
             }
 
@@ -2750,7 +2750,7 @@
                 : 'Highlight Rule: None';
             buildStyledReportHeader(
                 ws1,
-                'OFFICIAL STUDENT ATTENDANCE SUMMARY REPORT (ROLL 1 – 250)',
+                'OFFICIAL STUDENT ATTENDANCE SUMMARY REPORT (ROLL 1 – 251)',
                 `Academic Session: ${selectedSession}  |  Total Classes Held: ${sessionClasses.length}  |  ${ruleDesc}  |  Generated: ${generatedOn}`,
                 s1Headers.length
             );
